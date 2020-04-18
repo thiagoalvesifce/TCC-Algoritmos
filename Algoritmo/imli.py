@@ -9,7 +9,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class imli():
-    def __init__(self, numPartition=-1, numClause=1, dataFidelity=10, weightFeature=1, solver="open-wbo", ruleType="CNF",
+    def __init__(self, numPartition=-1, numClause=2, dataFidelity=10, weightFeature=1, solver="open-wbo", ruleType="CNF",
                  workDir=".", timeOut=1024):
         '''
 
@@ -194,7 +194,7 @@ class imli():
     def fit(self, XTrain, yTrain):
 
         if(self.numPartition == -1):
-            self.numPartition = 2**math.floor(math.log2(len(XTrain)/32))
+            self.numPartition = 2**math.floor(math.log2(len(XTrain)/4))
 
             # print("partitions:" + str(self.numPartition))
             
@@ -315,8 +315,12 @@ class imli():
         # algorithm 1 in paper
 
         new_fileds = fields
+        # vetor com as colunas barradas
         end_of_column_list = [self.columnInfo[i][-1] for i in range(len(self.columnInfo))]
+        # matriz cuja linha representa uma regra(this.numClause) e cada coluna é um vetor que guarda freq. e
+        # classificacao das repectivas colunas barradas
         freq_end_of_column_list = [[[0, 0] for i in range(len(end_of_column_list))] for j in range(self.numClause)]
+        # matriz que guarda os literais positivos de suas repectiva coluna barrada
         variable_contained_list = [[[] for i in range(len(end_of_column_list))] for j in range(self.numClause)]
 
         for i in range(self.numClause * xSize):
@@ -367,6 +371,9 @@ class imli():
         X_list = [[] for i in range(max_y - min_y + 1)]
         y_list = [[] for i in range(max_y - min_y + 1)]
         level = int(math.log(partition_count, 2.0))
+
+        # ao final do for abaixo y_list guardara duas listas, a primeira com previsoes 0 e a segunda com as previsoes 1
+        # consequentemente o X_list guardara as duas listas com as respectivas posicoes de suas previsoes do y_list
         for i in range(len(y)):
             inserting_index = int(y[i])
             y_list[inserting_index - min_y].append(y[i])
@@ -374,6 +381,9 @@ class imli():
 
         final_partition_X_train = [[] for i in range(partition_count)]
         final_partition_y_train = [[] for i in range(partition_count)]
+
+        # o for abaixo percorrera separadamente o conjunto com previsoes 0 depois com previsoes 1 para
+        # efetuar o embaralhamento(for interno)
         for each_class in range(len(X_list)):
             partition_list_X_train = [X_list[each_class]]
             partition_list_y_train = [y_list[each_class]]
@@ -536,7 +546,7 @@ class imli():
 model = imli(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r".../TCC - IMLI/Tabela_de_testes/tabela_depressao.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC - IMLI\Tabela_de_testes\tabela_depressao - teste2.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
