@@ -1,0 +1,7 @@
+c MiFuMax MaxSAT solver
+c Mikolas Janota, (C) 2013
+c weighted MaxSAT
+c some hard clauses (partial MaxSAT)
+o 0
+s OPTIMUM FOUND
+v -1 2 -3 4 5 -6 -7 8 9 -10

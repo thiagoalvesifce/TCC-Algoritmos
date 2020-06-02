@@ -318,7 +318,7 @@ class imli():
         # vetor com as colunas barradas
         end_of_column_list = [self.columnInfo[i][-1] for i in range(len(self.columnInfo))]
         # matriz cuja linha representa uma regra(this.numClause) e cada coluna é um vetor que guarda freq. e
-        # classificacao das repectivas colunas barradas
+        # classificacao das respectivas colunas barradas
         freq_end_of_column_list = [[[0, 0] for i in range(len(end_of_column_list))] for j in range(self.numClause)]
         # matriz que guarda os literais positivos de suas repectiva coluna barrada
         variable_contained_list = [[[] for i in range(len(end_of_column_list))] for j in range(self.numClause)]
@@ -546,9 +546,10 @@ class imli():
 model = imli(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC - IMLI\Tabela_de_testes\tabela_depressao - teste2.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\tabela_depressao - teste2.csv"
 
 #aplico a discretizacao do modelo na tabela
+#OBS: Em caso de haver colunas categoricas, diga quais as colunas pelo seus indices (0, 1, ...)
 X,y=model.discretize(arq)
 
 #treinando o modelo usando a discretizacao da tabela
