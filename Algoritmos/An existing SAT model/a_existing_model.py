@@ -451,6 +451,9 @@ class a_existing_model():
                 additionalVariable += 1    
                 numClauses += 1
 
+        # Atualizando o topWeight
+        topWeight = self.numClause * self.columnInfo[-1][-1]
+
         # 2.1) Garante que uma linha com y = 0 seja falsa em todas as regras.
 
         # Para cada linha da matriz de dados ...
@@ -462,6 +465,7 @@ class a_existing_model():
                 # Para cada regra j das N regras
                 for j in range(self.numClause):
                     new_clause = str(self.dataFidelity) + ' '
+                    topWeight += self.dataFidelity
 
                     # Para cada feature r das K features da linha e
                     for r in range(len(self.columnInfo)):
@@ -498,8 +502,12 @@ class a_existing_model():
         # 4.1 ) Garante que a linha com y = 1 tem que ser verdadeira em alguma regra.
 
         # Percorrendo as variaveis cr,j
-        for cr in range((self.numClause * self.columnInfo[-1][-1]) + 1, additionalVariable + 1, self.numClause):
+        #OBS: Como as variáveis cr,j ainda não foram criadas, precisamos prever quantas terão no total
+        additionalVariablePrevision = additionalVariable + self.numClause * yVector.count(1)
+
+        for cr in range((self.numClause * self.columnInfo[-1][-1]) + 1, additionalVariablePrevision + 1, self.numClause):
             new_clause = str(self.dataFidelity) + ' '
+            topWeight += self.dataFidelity
 
             # Para cada regra j das N regras
             for j in range(self.numClause):
@@ -511,8 +519,8 @@ class a_existing_model():
             numClauses += 1
             cnfClauses += new_clause
 
-        # Atualizando o toWeight
-        topWeight = (self.numClause * self.columnInfo[-1][-1] * topWeight) + ((additionalVariable - (self.numClause * self.columnInfo[-1][-1])) * self.dataFidelity) + 1
+        # Fazendo com que o topWeight seja maior que a soma das softClauses para pesificar as hard's
+        topWeight += 1 
 
         # MONTANDO CLAUSULAS HARD, ---------------------------------------------------------------------------------------------------
 
@@ -528,10 +536,9 @@ class a_existing_model():
                 if(self.columnInfo[r][0] == 1):
                     new_clause = str(topWeight) + ' '
 
-                    # Para a criacao de dois literais: pj,r e p'j,r
+                    # Para a criacao da clausula: (pj,r V p'j,r)
                     new_clause += str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1])) + ' ' + str(self.columnInfo[r][2] + (j * self.columnInfo[-1][-1])) 
                                                                             
-                    additionalVariable += 2
                     new_clause += " 0\n"
                     numClauses += 1
                     cnfClauses += new_clause
@@ -543,10 +550,9 @@ class a_existing_model():
 
                         new_clause = str(topWeight) + ' '
 
-                        # Para a criacao de dois literais: pj,r e p'j,r
+                        # Para a criacao da clausula: (pj,r V p'j,r)
                         new_clause += str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1])) + ' ' + str(self.columnInfo[r+1][sc] + (j * self.columnInfo[-1][-1]))
                         
-                        additionalVariable += 2
                         new_clause += " 0\n"
                         numClauses += 1
                         cnfClauses += new_clause
@@ -563,6 +569,7 @@ class a_existing_model():
 
                 # Para cada regra j das N regras
                 for j in range(self.numClause):
+                    # Representa a criacao de uma variável cr,j
                     additionalVariable += 1
 
                     # Para cada feature r das K features da linha e
@@ -645,7 +652,7 @@ class a_existing_model():
 model = a_existing_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste1.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\tabela_depressao - teste2.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
