@@ -372,16 +372,19 @@ class a_existing_model():
         cnfClauses = representa o arquivo WCNF gerado ao final da modelagem
 
         '''
-        # MONTANDO CLAUSULAS HARD,
         topWeight = 1
         additionalVariable = 0
         numClauses = 0
         cnfClauses = ''
 
-        # 1) Garantindo que duas colunas não estejam ao mesmo tempo. Ex: A ou ¬A, nunca os dois.
+        # MONTANDO CLAUSULAS SOFT, ---------------------------------------------------------------------------------------------------
+
+        # 1.1) Criando variaveis soft que garantem o minimo de colunas contida nas regras
+
         # Se o assignList estiver vazio, entao quer dizer que estamos na primeira particao de dados,
-        # logo devemos criar os literais que representam as colunas e sua polaridade
+        # logo devemos CRIAR os literais que representam as colunas e sua polaridade
         if(self.assignList == []):
+
             # Para cada regra j das N regras
             for j in range(self.numClause):
 
@@ -392,13 +395,21 @@ class a_existing_model():
                     if(self.columnInfo[r][0] == 1):
                         new_clause = str(topWeight) + ' '
 
-                        # Para a criacao de dois literais: pj,r e p'j,r
-                        new_clause += str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1])) + ' ' + str(self.columnInfo[r][2] + (j * self.columnInfo[-1][-1])) 
-                                                                                
-                        additionalVariable += 2
+                        # Para a criacao do literal: pj,r
+                        new_clause += str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1])) 
                         new_clause += " 0\n"
-                        numClauses += 1
                         cnfClauses += new_clause
+
+                        new_clause = str(topWeight) + ' '
+
+                        # Para a criacao do literal: p'j,r
+                        new_clause += str(self.columnInfo[r][2] + (j * self.columnInfo[-1][-1]))
+                        new_clause += " 0\n"
+                        cnfClauses += new_clause
+
+                        additionalVariable += 2
+                        numClauses += 2
+                        
 
                     # Se a coluna for categorica ou ordinal
                     elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
@@ -407,13 +418,21 @@ class a_existing_model():
 
                             new_clause = str(topWeight) + ' '
 
-                            # Para a criacao de dois literais: pj,r e p'j,r
-                            new_clause += str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1])) + ' ' + str(self.columnInfo[r+1][sc] + (j * self.columnInfo[-1][-1]))
-                            
-                            additionalVariable += 2
+                            # Para a criacao de dois literais: pj,r
+                            new_clause += str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1]))
                             new_clause += " 0\n"
-                            numClauses += 1
                             cnfClauses += new_clause
+
+                            new_clause = str(topWeight) + ' '
+
+                            # Para a criacao de dois literais: p'j,r
+                            new_clause += str(self.columnInfo[r+1][sc] + (j * self.columnInfo[-1][-1]))
+                            new_clause += " 0\n"
+                            cnfClauses += new_clause
+
+                            additionalVariable += 2    
+                            numClauses += 2
+                            
 
                     # Se não for binaria, categoria ou ordinal e coluna barrada
                     else:
@@ -421,18 +440,20 @@ class a_existing_model():
 
         # Caso o assignList esteja com valores, devemos usa-los
         else:
-            # Percorrendo o assignList e remontando em forma de clausulas        
-            for l in range(0, len(self.assignList), 2):
+            # Para cada literal no assignList
+            for l in self.assignList:
                 new_clause = str(topWeight) + ' '
 
-                new_clause += str(self.assignList[l]) + ' ' + str(self.assignList[l+1])
-
-                additionalVariable += 2
+                new_clause += str(l)
                 new_clause += " 0\n"
-                numClauses += 1
                 cnfClauses += new_clause
 
-        # 2) Garante que uma linha com y = 0 seja falsa em todas as regras.
+                additionalVariable += 1    
+                numClauses += 1
+
+        # 2.1) Garante que uma linha com y = 0 seja falsa em todas as regras.
+
+        # Para cada linha da matriz de dados ...
         for e in range(len(yVector)):
 
             # Se essa linha tiver previsao = 0
@@ -440,7 +461,7 @@ class a_existing_model():
 
                 # Para cada regra j das N regras
                 for j in range(self.numClause):
-                    new_clause = str(topWeight) + ' '
+                    new_clause = str(self.dataFidelity) + ' '
 
                     # Para cada feature r das K features da linha e
                     for r in range(len(self.columnInfo)):
@@ -474,8 +495,72 @@ class a_existing_model():
                     numClauses += 1
                     cnfClauses += new_clause
 
-            # 3) ...
-            else:
+        # 4.1 ) Garante que a linha com y = 1 tem que ser verdadeira em alguma regra.
+
+        # Percorrendo as variaveis cr,j
+        for cr in range((self.numClause * self.columnInfo[-1][-1]) + 1, additionalVariable + 1, self.numClause):
+            new_clause = str(self.dataFidelity) + ' '
+
+            # Para cada regra j das N regras
+            for j in range(self.numClause):
+                new_clause += str(cr) + ' '
+
+                cr += 1
+
+            new_clause += "0\n"
+            numClauses += 1
+            cnfClauses += new_clause
+
+        # Atualizando o toWeight
+        topWeight = (self.numClause * self.columnInfo[-1][-1] * topWeight) + ((additionalVariable - (self.numClause * self.columnInfo[-1][-1])) * self.dataFidelity) + 1
+
+        # MONTANDO CLAUSULAS HARD, ---------------------------------------------------------------------------------------------------
+
+        # 1) Garantindo que duas colunas não estejam ao mesmo tempo com polaridades invertidas. Ex: A ou ¬A, nunca os dois.
+        
+        # Para cada regra j das N regras
+        for j in range(self.numClause):
+
+            # Para cada feature r das K features
+            for r in range(len(self.columnInfo)): 
+
+                # Se a coluna for binaria
+                if(self.columnInfo[r][0] == 1):
+                    new_clause = str(topWeight) + ' '
+
+                    # Para a criacao de dois literais: pj,r e p'j,r
+                    new_clause += str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1])) + ' ' + str(self.columnInfo[r][2] + (j * self.columnInfo[-1][-1])) 
+                                                                            
+                    additionalVariable += 2
+                    new_clause += " 0\n"
+                    numClauses += 1
+                    cnfClauses += new_clause
+
+                # Se a coluna for categorica ou ordinal
+                elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
+                    # Para cada subcoluna sc
+                    for sc in range(1, len(self.columnInfo[r])):
+
+                        new_clause = str(topWeight) + ' '
+
+                        # Para a criacao de dois literais: pj,r e p'j,r
+                        new_clause += str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1])) + ' ' + str(self.columnInfo[r+1][sc] + (j * self.columnInfo[-1][-1]))
+                        
+                        additionalVariable += 2
+                        new_clause += " 0\n"
+                        numClauses += 1
+                        cnfClauses += new_clause
+
+                # Se não for binaria, categoria ou ordinal e coluna barrada
+                else:
+                    continue
+
+        # 3) ...
+        for e in range(len(yVector)):
+
+            # Se essa linha tiver previsao = 1
+            if(yVector[e] == 1):
+
                 # Para cada regra j das N regras
                 for j in range(self.numClause):
                     additionalVariable += 1
@@ -517,21 +602,6 @@ class a_existing_model():
                         # Se não for binaria, categoria ou ordinal, entao -> coluna barrada
                         else:
                             continue
-
-        # 4) Garante que a linha com y = 1 tem que ser verdadeira em alguma regra.
-        # Percorrendo as variaveis cr,j
-        for cr in range((self.numClause * self.columnInfo[-1][-1]) + 1, additionalVariable + 1, self.numClause):
-            new_clause = str(topWeight) + ' '
-
-            # Para cada regra j das N regras
-            for j in range(self.numClause):
-                new_clause += str(cr) + ' '
-
-                cr += 1
-
-            new_clause += "0\n"
-            numClauses += 1
-            cnfClauses += new_clause
     
         # write in wcnf format
         header = 'p wcnf ' + str(additionalVariable) + ' ' + str(numClauses) + ' ' + str(topWeight) + '\n'
@@ -575,7 +645,7 @@ class a_existing_model():
 model = a_existing_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste2.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste1.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
