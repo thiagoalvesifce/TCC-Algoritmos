@@ -9,7 +9,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class imli():
-    def __init__(self, numPartition=-1, numClause=2, dataFidelity=10, weightFeature=1, solver="open-wbo", ruleType="CNF",
+    def __init__(self, numPartition=-1, numClause=2, dataFidelity=10, weightFeature=1, solver="open-wbo", ruleType="DNF",
                  workDir=".", timeOut=1024):
         '''
 
@@ -194,7 +194,7 @@ class imli():
     def fit(self, XTrain, yTrain):
 
         if(self.numPartition == -1):
-            self.numPartition = 2**math.floor(math.log2(len(XTrain)/4))
+            self.numPartition = 2**math.floor(math.log2(len(XTrain)/32))
 
             # print("partitions:" + str(self.numPartition))
             
@@ -315,33 +315,53 @@ class imli():
         # algorithm 1 in paper
 
         new_fileds = fields
-        # vetor com as colunas barradas
+        # vetor com as colunas barradas (caso o dado seja binário)
+        # vetor com a ultima coluna dos dados normais  (caso o dado seja categorico ou ordinal)
         end_of_column_list = [self.columnInfo[i][-1] for i in range(len(self.columnInfo))]
+
         # matriz cuja linha representa uma regra(this.numClause) e cada coluna é um vetor que guarda freq. e
-        # classificacao das respectivas colunas barradas
+        # classificacao das respectivas colunas salvas anteriormente no end_of_column_list
         freq_end_of_column_list = [[[0, 0] for i in range(len(end_of_column_list))] for j in range(self.numClause)]
-        # matriz que guarda os literais positivos de suas repectiva coluna barrada
+
+        # matriz que guarda os literais positivos de suas repectivas colunas barrada
         variable_contained_list = [[[] for i in range(len(end_of_column_list))] for j in range(self.numClause)]
 
+        # percorre todas as colunas que estarao na(s) regra(s)
         for i in range(self.numClause * xSize):
+            # se o valor do literal nessa coluna for positivo (vai estar na regra) ...
             if ((int(fields[i])) > 0):
+                # variavel que representa o valor do literal (nunca maior que o valor do literal que representa a ultima coluna)
                 variable = (int(fields[i]) - 1) % xSize + 1
+
+                # variavel que guarda o indice da regra que o literal esta (nunca maior que o numero de regras -1 (indice))
                 clause_position = int((int(fields[i]) - 1) / xSize)
+
+                # percorre todas as colunas adicionadas no end_of_column_list
                 for j in range(len(end_of_column_list)):
+
+                    # averiguando se o valor do literal e menor ou igual ao valor da coluna guardada no indice j do end_of_column_list
                     if (variable <= end_of_column_list[j]):
                         variable_contained_list[clause_position][j].append(clause_position * xSize + variable)
                         freq_end_of_column_list[clause_position][j][0] += 1
                         freq_end_of_column_list[clause_position][j][1] = self.columnInfo[j][0]
                         break
+        
+        # percorrera o numero de regras
         for l in range(self.numClause):
 
+            # percorre todas as colunas adicionadas no freq_end_of_column_list na linha l
             for i in range(len(freq_end_of_column_list[l])):
+                # se a coluna apareceu mais de uma vez (freq. > 1) ...
                 if (freq_end_of_column_list[l][i][0] > 1):
+                    # se a coluna for do tipo 3 (ordinal normal)
                     if (freq_end_of_column_list[l][i][1] == 3):
+                        # retiro o ultimo literal da lista de literais que representam a mesma coluna (ele vai ser o unico positivo ao final desse if)
                         variable_contained_list[l][i] = variable_contained_list[l][i][:-1]
+                        # adiciono o sinal de negacao para todos os literais que ficaram na lista
                         for j in range(len(variable_contained_list[l][i])):
                             new_fileds[variable_contained_list[l][i][j] - 1] = "-" + str(
                                 variable_contained_list[l][i][j])
+                    # se a coluna for do tipo 4 (ordinal barrada)
                     elif (freq_end_of_column_list[l][i][1] == 4):
                         variable_contained_list[l][i] = variable_contained_list[l][i][1:]
                         for j in range(len(variable_contained_list[l][i])):
@@ -546,7 +566,7 @@ class imli():
 model = imli(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\tabela_depressao - teste2.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
 
 #aplico a discretizacao do modelo na tabela
 #OBS: Em caso de haver colunas categoricas, diga quais as colunas pelo seus indices (0, 1, ...)
