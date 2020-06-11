@@ -201,7 +201,7 @@ class a_existing_model():
     def fit(self, XTrain, yTrain):
 
         if(self.numPartition == -1):
-            self.numPartition = 2**math.floor(math.log2(len(XTrain)/4))
+            self.numPartition = 2**math.floor(math.log2(len(XTrain)/32))
 
             # print("partitions:" + str(self.numPartition))
             
@@ -277,6 +277,8 @@ class a_existing_model():
 
         fields = solution.split()
         zeroOneSolution = []
+
+        fields = self.pruneRules(fields, self.columnInfo[-1][-1])
 
         for field in fields:
             if (int(field) > 0):
@@ -617,6 +619,64 @@ class a_existing_model():
         f.write(cnfClauses)
         f.close()
 
+    def pruneRules(self, fields, xSize):
+
+        new_fileds = fields
+        # vetor com as colunas barradas (caso o dado seja binário)
+        # vetor com a ultima coluna dos dados normais  (caso o dado seja categorico ou ordinal)
+        end_of_column_list = [self.columnInfo[i][-1] for i in range(len(self.columnInfo))]
+
+        # matriz cuja linha representa uma regra(this.numClause) e cada coluna é um vetor que guarda freq. e
+        # classificacao das respectivas colunas salvas anteriormente no end_of_column_list
+        freq_end_of_column_list = [[[0, 0] for i in range(len(end_of_column_list))] for j in range(self.numClause)]
+
+        # matriz que guarda os literais positivos de suas repectivas colunas barrada
+        variable_contained_list = [[[] for i in range(len(end_of_column_list))] for j in range(self.numClause)]
+
+        # percorre todas as colunas que estarao na(s) regra(s)
+        for i in range(self.numClause * xSize):
+            # se o valor do literal nessa coluna for negativo (vai estar na regra) ...
+            if ((int(fields[i])) < 0):
+                # variavel que representa o valor do literal (nunca maior que o valor do literal que representa a ultima coluna)
+                variable = (abs(int(fields[i])) - 1) % xSize + 1
+
+                # variavel que guarda o indice da regra que o literal esta (nunca maior que o numero de regras -1 (indice))
+                clause_position = int((abs(int(fields[i])) - 1) / xSize)
+
+                # percorre todas as colunas adicionadas no end_of_column_list
+                for j in range(len(end_of_column_list)):
+
+                    # averiguando se o valor do literal e menor ou igual ao valor da coluna guardada no indice j do end_of_column_list
+                    if (variable <= end_of_column_list[j]):
+                        variable_contained_list[clause_position][j].append(clause_position * xSize + variable)
+                        freq_end_of_column_list[clause_position][j][0] += 1
+                        freq_end_of_column_list[clause_position][j][1] = self.columnInfo[j][0]
+                        break
+        
+        # percorrera o numero de regras
+        for l in range(self.numClause):
+
+            # percorre todas as colunas adicionadas no freq_end_of_column_list na linha l
+            for i in range(len(freq_end_of_column_list[l])):
+                # se a coluna apareceu mais de uma vez (freq. > 1) ...
+                if (freq_end_of_column_list[l][i][0] > 1):
+                    # se a coluna for do tipo 4 (ordinal normal)
+                    if (freq_end_of_column_list[l][i][1] == 4):
+                        # retiro o primeiro literal da lista de literais que representam a mesma coluna (ele vai ser o unico negativo ao final desse if)
+                        variable_contained_list[l][i] = variable_contained_list[l][i][1:]
+                        # retiro o sinal de negacao de todos os literais que ficaram na lista
+                        for j in range(len(variable_contained_list[l][i])):
+                            new_fileds[variable_contained_list[l][i][j] - 1] = str(
+                                variable_contained_list[l][i][j])
+                    # se a coluna for do tipo 5 (ordinal barrada)
+                    elif (freq_end_of_column_list[l][i][1] == 5):
+                        # retiro o ultimo literal da lista de literais que representam a mesma coluna (ele vai ser o unico negativo ao final desse if)
+                        variable_contained_list[l][i] = variable_contained_list[l][i][:-1]
+                        for j in range(len(variable_contained_list[l][i])):
+                            new_fileds[variable_contained_list[l][i][j] - 1] = str(
+                                variable_contained_list[l][i][j])
+        return new_fileds
+
     def getRule(self):
         generatedRule = '( '
         for i in range(self.numClause):
@@ -652,7 +712,7 @@ class a_existing_model():
 model = a_existing_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\tabela_depressao - teste2.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
