@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
-class a_existing_model():
+class an_existing_model():
     def __init__(self, numPartition=-1, numClause=2, dataFidelity=10, weightFeature=1, solver="open-wbo", ruleType="DNF",
                  workDir=".", timeOut=1024):
         '''
@@ -709,7 +709,7 @@ class a_existing_model():
 #------------- TESTES --------------------------------------------------------------------
 
 #instancio o modelo indicando o nome do exec. do solver que deve está na mesma pasta
-model = a_existing_model(solver="mifumax-win-mfc_static")
+model = an_existing_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
 arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
