@@ -415,7 +415,8 @@ class an_alternative_model():
             cnfClauses += new_clause
 
         # 2) Define a variável dº que rejeita as linhas com a feature sendo 0 e o d¹ com as features sendo 1
-
+        
+        djr = (self.numClause * self.columnInfo[-1][-1])
         # Laco que representa as variaveis dº e d¹
         for d in range(2):
 
@@ -428,11 +429,12 @@ class an_alternative_model():
                     # Se a coluna for binaria
                     if(self.columnInfo[r][0] == 1):
                         # Criando variavel dº¹j,r
+                        djr += 1
                         additionalVariable += 1
                         
                         # (¬dº¹j,r V ¬sjr)
                         new_clause = str(topWeight) + ' '
-                        new_clause += '-' + str(additionalVariable) + ' -' + str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1]))
+                        new_clause += '-' + str(djr) + ' -' + str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1]))
                         
                         new_clause += " 0\n"
                         numClauses += 1
@@ -440,11 +442,11 @@ class an_alternative_model():
 
                         # (¬dºj,r V lj,r) se dº OU (¬d¹j,r V ¬lj,r) se d¹
                         new_clause = str(topWeight) + ' '
-                        new_clause += '-' + str(additionalVariable) + ' '
+                        new_clause += '-' + str(djr) + ' '
                         if(d == 0):
-                            new_clause += str(additionalVariable + 1)
+                            new_clause += str(djr + 1)
                         else:
-                            new_clause += '-' + str(additionalVariable + 1)
+                            new_clause += '-' + str(djr + 1)
 
                         new_clause += " 0\n"
                         numClauses += 1
@@ -454,16 +456,16 @@ class an_alternative_model():
                         new_clause = str(topWeight) + ' '
                         new_clause += str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1])) + ' '
                         if(d == 0):
-                            new_clause += '-' + str(additionalVariable + 1) + ' '
+                            new_clause += '-' + str(djr + 1) + ' '
                         else:
-                            new_clause += str(additionalVariable + 1) + ' '
-                        new_clause += str(additionalVariable)
+                            new_clause += str(djr + 1) + ' '
+                        new_clause += str(djr)
 
                         new_clause += " 0\n"
                         numClauses += 1
                         cnfClauses += new_clause
 
-                        # Criando variavel lj,r que nas tres clausulas anteriores era additionalVariable + 1
+                        # Criando variavel lj,r que nas tres clausulas anteriores era djr + 1
                         additionalVariable += 1
 
                     # Se a coluna for categorica ou ordinal
@@ -471,11 +473,12 @@ class an_alternative_model():
                         # Para cada subcoluna sc
                         for sc in range(1, len(self.columnInfo[r])):
                             # Criando variavel dº¹j,r
+                            djr += 1
                             additionalVariable += 1
                             
                             # (¬dº¹j,r V ¬sjr)
                             new_clause = str(topWeight) + ' '
-                            new_clause += '-' + str(additionalVariable) + ' -' + str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1]))
+                            new_clause += '-' + str(djr) + ' -' + str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1]))
                             
                             new_clause += " 0\n"
                             numClauses += 1
@@ -483,11 +486,11 @@ class an_alternative_model():
 
                             # (¬dºj,r V lj,r) se dº OU (¬d¹j,r V ¬lj,r) se d¹
                             new_clause = str(topWeight) + ' '
-                            new_clause += '-' + str(additionalVariable) + ' '
+                            new_clause += '-' + str(djr) + ' '
                             if(d == 0):
-                                new_clause += str(additionalVariable + 1)
+                                new_clause += str(djr + 1)
                             else:
-                                new_clause += '-' + str(additionalVariable + 1)
+                                new_clause += '-' + str(djr + 1)
 
                             new_clause += " 0\n"
                             numClauses += 1
@@ -497,16 +500,16 @@ class an_alternative_model():
                             new_clause = str(topWeight) + ' '
                             new_clause += str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1])) + ' '
                             if(d == 0):
-                                new_clause += '-' + str(additionalVariable + 1) + ' '
+                                new_clause += '-' + str(djr + 1) + ' '
                             else:
-                                new_clause += str(additionalVariable + 1) + ' '
-                            new_clause += str(additionalVariable)
+                                new_clause += str(djr + 1) + ' '
+                            new_clause += str(djr)
 
                             new_clause += " 0\n"
                             numClauses += 1
                             cnfClauses += new_clause
 
-                            # Criando variavel lj,r que nas tres clausulas anteriores era additionalVariable + 1
+                            # Criando variavel lj,r que nas tres clausulas anteriores era djr + 1
                             additionalVariable += 1
 
                     # Se não for binaria, categoria ou ordinal e coluna barrada
@@ -613,7 +616,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\tabela_depressao - teste.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste1.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
