@@ -466,6 +466,7 @@ class an_alternative_model():
                         cnfClauses += new_clause
 
                         # Criando variavel lj,r que nas tres clausulas anteriores era djr + 1
+                        djr += 1
                         additionalVariable += 1
 
                     # Se a coluna for categorica ou ordinal
@@ -510,11 +511,63 @@ class an_alternative_model():
                             cnfClauses += new_clause
 
                             # Criando variavel lj,r que nas tres clausulas anteriores era djr + 1
+                            djr += 1
                             additionalVariable += 1
 
                     # Se não for binaria, categoria ou ordinal e coluna barrada
                     else:
                         continue
+        
+        # 3) Força que todas as regras de todas as linhas cujo y seja = 0, sejam anuladas.
+
+        # Percorrendo todas as linhas e da matriz
+        for e in range(len(yVector)):
+
+            # Averiguando se a linha e tem previsao 0
+            if(yVector[e] == 0):
+                # Voltando para a primeira variavel dº¹j,r
+                djr = (self.numClause * self.columnInfo[-1][-1]) + 1
+
+                # Para cada regra j das N regras
+                for j in range(self.numClause):
+                    new_clause = str(topWeight) + ' '
+
+                    # Para cada feature r das K features
+                    for r in range(len(self.columnInfo)):
+
+                        # Se a coluna for binaria
+                        if(self.columnInfo[r][0] == 1):
+                            # Averiguando se o valor na matriz na linha e nessa coluna é 0 ou 1
+                            # Caso seja 0, entao coloco dºjr. Caso seja 1, entao coloco d¹jr
+                            if(AMatrix[e][self.columnInfo[r][1] - 1] == 0):
+                                new_clause += str(djr) + ' '
+                            else:
+                                new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2) * 2)) + ' '
+
+                            # Pulo a variavel ljr e passo para o proximo dº¹j,r
+                            djr += 2
+
+                        # Se a coluna for categorica ou ordinal
+                        elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
+                            # Para cada subcoluna sc
+                            for sc in range(1, len(self.columnInfo[r])):
+                                # Averiguando se o valor na matriz na linha e nessa coluna é 0 ou 1
+                                # Caso seja 0, entao coloco dºjr. Caso seja 1, entao coloco d¹jr
+                                if(AMatrix[e][self.columnInfo[r][sc] - 1] == 0):
+                                    new_clause += str(djr) + ' '
+                                else:
+                                    new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]/2) * 2)) + ' '
+
+                                # Pulo a variavel ljr e passo para o proximo dº¹j,r
+                                djr += 2
+
+                        # Se não for binaria, categoria ou ordinal e coluna barrada
+                        else:
+                            continue
+
+                    new_clause += "0\n"
+                    numClauses += 1
+                    cnfClauses += new_clause
 
         # write in wcnf format
         header = 'p wcnf ' + str(additionalVariable) + ' ' + str(numClauses) + ' ' + str(topWeight) + '\n'
