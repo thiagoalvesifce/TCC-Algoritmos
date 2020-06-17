@@ -650,6 +650,24 @@ class an_alternative_model():
                     new_clause += "0\n"
                     numClauses += 1
                     cnfClauses += new_clause                 
+        
+        # Calculando onde comeca as variaveis cje
+        cje0 = ((self.numClause * self.columnInfo[-1][-1]) + 1) + (2 * (self.numClause * (self.columnInfo[-1][-1]//2) * 2))
+
+        # 5) Garante que a linha com y = 1 tem que ser verdadeira em alguma regra.
+
+        for cr in range(cje0, cje + 1, self.numClause):
+            new_clause = str(topWeight) + ' '
+
+            # Para cada regra j das N regras
+            for j in range(self.numClause):
+                new_clause += str(cr) + ' '
+
+                cr += 1
+
+            new_clause += "0\n"
+            numClauses += 1
+            cnfClauses += new_clause
 
         # write in wcnf format
         header = 'p wcnf ' + str(additionalVariable) + ' ' + str(numClauses) + ' ' + str(topWeight) + '\n'
@@ -751,7 +769,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste1.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste2.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
