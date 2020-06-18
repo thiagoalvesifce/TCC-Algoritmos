@@ -416,21 +416,26 @@ class an_alternative_model():
 
         # 2) Define a variável dº que rejeita as linhas com a feature sendo 0 e o d¹ com as features sendo 1
         
-        djr = (self.numClause * self.columnInfo[-1][-1])
+        # Definindo onde as variaveis dj,r vao iniciar (ainda sera incrementado + 1)
+        ljr = (self.numClause * self.columnInfo[-1][-1])
+        # Definindo onde as variaveis lj,r vao iniciar (ainda sera incrementado + 1)
+        djr = ljr + (self.numClause * (self.columnInfo[-1][-1]//2))
+
         # Laco que representa as variaveis dº e d¹
         for d in range(2):
 
             # Para cada regra j das N regras
             for j in range(self.numClause):
-
+                
                 # Para cada feature r das K features
                 for r in range(len(self.columnInfo)):
 
                     # Se a coluna for binaria
                     if(self.columnInfo[r][0] == 1):
-                        # Criando variavel dº¹j,r
+                        # Criando variavel dº¹j,r e lj,r
                         djr += 1
-                        additionalVariable += 1
+                        ljr += 1
+                        additionalVariable += 2
                         
                         # (¬dº¹j,r V ¬sjr)
                         new_clause = str(topWeight) + ' '
@@ -444,9 +449,9 @@ class an_alternative_model():
                         new_clause = str(topWeight) + ' '
                         new_clause += '-' + str(djr) + ' '
                         if(d == 0):
-                            new_clause += str(djr + 1)
+                            new_clause += str(ljr)
                         else:
-                            new_clause += '-' + str(djr + 1)
+                            new_clause += '-' + str(ljr)
 
                         new_clause += " 0\n"
                         numClauses += 1
@@ -456,26 +461,23 @@ class an_alternative_model():
                         new_clause = str(topWeight) + ' '
                         new_clause += str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1])) + ' '
                         if(d == 0):
-                            new_clause += '-' + str(djr + 1) + ' '
+                            new_clause += '-' + str(ljr) + ' '
                         else:
-                            new_clause += str(djr + 1) + ' '
+                            new_clause += str(ljr) + ' '
                         new_clause += str(djr)
 
                         new_clause += " 0\n"
                         numClauses += 1
                         cnfClauses += new_clause
 
-                        # Criando variavel lj,r que nas tres clausulas anteriores era djr + 1
-                        djr += 1
-                        additionalVariable += 1
-
                     # Se a coluna for categorica ou ordinal
                     elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
                         # Para cada subcoluna sc
                         for sc in range(1, len(self.columnInfo[r])):
-                            # Criando variavel dº¹j,r
+                            # Criando variavel dº¹j,r e lj,r
                             djr += 1
-                            additionalVariable += 1
+                            ljr += 1
+                            additionalVariable += 2
                             
                             # (¬dº¹j,r V ¬sjr)
                             new_clause = str(topWeight) + ' '
@@ -489,9 +491,9 @@ class an_alternative_model():
                             new_clause = str(topWeight) + ' '
                             new_clause += '-' + str(djr) + ' '
                             if(d == 0):
-                                new_clause += str(djr + 1)
+                                new_clause += str(ljr)
                             else:
-                                new_clause += '-' + str(djr + 1)
+                                new_clause += '-' + str(ljr)
 
                             new_clause += " 0\n"
                             numClauses += 1
@@ -501,27 +503,27 @@ class an_alternative_model():
                             new_clause = str(topWeight) + ' '
                             new_clause += str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1])) + ' '
                             if(d == 0):
-                                new_clause += '-' + str(djr + 1) + ' '
+                                new_clause += '-' + str(ljr) + ' '
                             else:
-                                new_clause += str(djr + 1) + ' '
+                                new_clause += str(ljr) + ' '
                             new_clause += str(djr)
 
                             new_clause += " 0\n"
                             numClauses += 1
                             cnfClauses += new_clause
 
-                            # Criando variavel lj,r que nas tres clausulas anteriores era djr + 1
-                            djr += 1
-                            additionalVariable += 1
-
                     # Se não for binaria, categoria ou ordinal e coluna barrada
                     else:
                         continue
+                    
+            # Resetando lj,r
+            ljr = (self.numClause * self.columnInfo[-1][-1])
         
-        # Marco a ultima variavel criada ate entao para demarcar o comeco da representacao dos crj's
-        cje = djr
-
         # 3) Força que todas as regras de todas as linhas cujo y seja = 0, sejam anuladas.
+
+        # Definindo onde as variaveis cj,e vao iniciar (ainda sera incrementado + 1)
+        cje = djr
+        cje0 = djr + 1
 
         # Percorrendo todas as linhas e da matriz
         for e in range(len(yVector)):
@@ -529,7 +531,7 @@ class an_alternative_model():
             # Averiguando se a linha e tem previsao 0
             if(yVector[e] == 0):
                 # Voltando para a primeira variavel dº¹j,r
-                djr = (self.numClause * self.columnInfo[-1][-1]) + 1
+                djr = (self.numClause * self.columnInfo[-1][-1]) + (self.numClause * (self.columnInfo[-1][-1]//2)) + 1
 
                 # Para cada regra j das N regras
                 for j in range(self.numClause):
@@ -545,10 +547,10 @@ class an_alternative_model():
                             if(AMatrix[e][self.columnInfo[r][1] - 1] == 0):
                                 new_clause += str(djr) + ' '
                             else:
-                                new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2) * 2)) + ' '
+                                new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
 
-                            # Pulo a variavel ljr e passo para o proximo dº¹j,r
-                            djr += 2
+                            # Passo para o proximo dº¹j,r
+                            djr += 1
 
                         # Se a coluna for categorica ou ordinal
                         elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
@@ -559,10 +561,10 @@ class an_alternative_model():
                                 if(AMatrix[e][self.columnInfo[r][sc] - 1] == 0):
                                     new_clause += str(djr) + ' '
                                 else:
-                                    new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2) * 2)) + ' '
+                                    new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
 
-                                # Pulo a variavel ljr e passo para o proximo dº¹j,r
-                                djr += 2
+                                # Passo para o proximo dº¹j,r
+                                djr += 1
 
                         # Se não for binaria, categoria ou ordinal e coluna barrada
                         else:
@@ -580,7 +582,7 @@ class an_alternative_model():
             # Averiguando se a linha e tem previsao 1
             if(yVector[e] == 1):
                 # Voltando para a primeira variavel dº¹j,r
-                djr = (self.numClause * self.columnInfo[-1][-1]) + 1
+                djr = (self.numClause * self.columnInfo[-1][-1]) + (self.numClause * (self.columnInfo[-1][-1]//2)) + 1
 
                 # Para cada regra j das N regras
                 for j in range(self.numClause):
@@ -605,16 +607,16 @@ class an_alternative_model():
                                 # Guardo o djr no aux_clause
                                 aux_clause += str(djr) + ' '
                             else:
-                                new_clause += '-' + str(djr + (self.numClause * (self.columnInfo[-1][-1]//2) * 2)) + ' '
+                                new_clause += '-' + str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
                                 # Guardo o djr no aux_clause
-                                aux_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2) * 2)) + ' '
+                                aux_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
 
                             new_clause += "0\n"
                             numClauses += 1
                             cnfClauses += new_clause
 
-                            # Pulo a variavel ljr e passo para o proximo dº¹j,r
-                            djr += 2
+                            # Passo para o proximo dº¹j,r
+                            djr += 1
 
                         # Se a coluna for categorica ou ordinal
                         elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
@@ -630,16 +632,16 @@ class an_alternative_model():
                                     # Guardo o djr no aux_clause
                                     aux_clause += str(djr) + ' '
                                 else:
-                                    new_clause += '-' + str(djr + (self.numClause * (self.columnInfo[-1][-1]//2) * 2)) + ' '
+                                    new_clause += '-' + str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
                                     # Guardo o djr no aux_clause
-                                    aux_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2) * 2)) + ' '
+                                    aux_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
 
                                 new_clause += "0\n"
                                 numClauses += 1
                                 cnfClauses += new_clause
 
-                                # Pulo a variavel ljr e passo para o proximo dº¹j,r
-                                djr += 2                   
+                                # Passo para o proximo dº¹j,r
+                                djr += 1                   
 
                         # Se não for binaria, categoria ou ordinal e coluna barrada
                         else:
@@ -651,9 +653,6 @@ class an_alternative_model():
                     numClauses += 1
                     cnfClauses += new_clause                 
         
-        # Calculando onde comeca as variaveis cje
-        cje0 = ((self.numClause * self.columnInfo[-1][-1]) + 1) + (2 * (self.numClause * (self.columnInfo[-1][-1]//2) * 2))
-
         # 5) Garante que a linha com y = 1 tem que ser verdadeira em alguma regra.
 
         for cr in range(cje0, cje + 1, self.numClause):
@@ -769,7 +768,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste2.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste1.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
