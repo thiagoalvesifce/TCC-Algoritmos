@@ -278,7 +278,35 @@ class an_alternative_model():
         fields = solution.split()
         zeroOneSolution = []
 
-        fields = self.pruneRules(fields, self.columnInfo[-1][-1])
+        # Tirando possiveis variaveis postas pelo solver
+
+        # Para cada regra j das N regras
+        for j in range(self.numClause):
+
+            # Para cada feature r das K features
+            for r in range(len(self.columnInfo)):
+
+                # Se a coluna for binaria
+                if(self.columnInfo[r][0] == 1):
+                    try:
+                        fields.remove(str(self.columnInfo[r][2] + (j * self.columnInfo[-1][-1])))
+                    except:
+                        fields.remove('-' + str(self.columnInfo[r][2] + (j * self.columnInfo[-1][-1])))
+
+                # Se a coluna for categorica ou ordinal
+                elif(self.columnInfo[r][0] == 3 or self.columnInfo[r][0] == 5):
+                    # Para cada subcoluna sc
+                    for sc in range(1, len(self.columnInfo[r])):
+                        try:
+                            fields.remove(str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1])))
+                        except:
+                            fields.remove('-' + str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1])))
+
+                # Se não for binaria, categoria ou ordinal e coluna barrada
+                else:
+                    continue
+
+        # fields = self.pruneRules(fields, self.columnInfo[-1][-1])
 
         for field in fields:
             if (int(field) > 0):
@@ -297,9 +325,9 @@ class an_alternative_model():
         os.system(cmd)
 
         if (not isTest):
-            self.assignList = fields[:self.numClause * (self.columnInfo[-1][-1])]
+            self.assignList = fields[:(self.numClause * (self.columnInfo[-1][-1]//2))+(self.numClause * (self.columnInfo[-1][-1]//2))]
 
-        return fields[self.numClause * self.columnInfo[-1][-1]:]
+        return fields[(self.numClause * (self.columnInfo[-1][-1]//2))+(self.numClause * (self.columnInfo[-1][-1]//2)):]
 
     def partitionWithEqualProbability(self, X, y):
         '''
@@ -515,7 +543,7 @@ class an_alternative_model():
                     # Se não for binaria, categoria ou ordinal e coluna barrada
                     else:
                         continue
-                    
+
             # Resetando lj,r
             ljr = (self.numClause * self.columnInfo[-1][-1])
         
