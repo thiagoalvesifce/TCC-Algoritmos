@@ -770,9 +770,16 @@ class an_alternative_model():
         generatedRule = '( '
         for i in range(self.numClause):
             xHatElem = self.xhat[i]
-            inds_nnz = np.where(abs(xHatElem) < 1e-4)[0]
+            inds_nnz = np.where(abs(xHatElem[0:self.columnInfo[-1][-1]//2]) < 1e-4)[0]
 
-            str_clauses = [' '.join(self.columns[ind]) for ind in inds_nnz]
+            str_clauses = []
+            for inds in inds_nnz:
+                if(xHatElem[inds + (self.columnInfo[-1][-1]//2)] > 1e-4):
+                    str_clauses.append(' '.join(self.columns[inds * 2]))
+                else:
+                    str_clauses.append(' '.join(self.columns[(inds * 2) + 1]))
+
+            # str_clauses = [' '.join(self.columns[ind]) for ind in inds_nnz]
             if (self.ruleType == "CNF"):
                 rule_sep = ' %s ' % "or"
             else:
@@ -801,7 +808,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste2.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\tabela_depressao - teste2.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
