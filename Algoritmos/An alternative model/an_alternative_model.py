@@ -318,7 +318,12 @@ class an_alternative_model():
         self.xhat = []
 
         for i in range(self.numClause):
-            self.xhat.append(np.array(zeroOneSolution[i * self.columnInfo[-1][-1]:(i + 1) * self.columnInfo[-1][-1]]))
+            self.xhat.append(
+                np.concatenate((
+                    np.array(zeroOneSolution[i * (self.columnInfo[-1][-1]//2):(i + 1) * (self.columnInfo[-1][-1]//2)]),
+                    np.array(zeroOneSolution[(i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2):((i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2)) + (self.columnInfo[-1][-1]//2)])
+                )) 
+            )
 
         # delete temp files
         cmd = "rm " + outputFileMaxsat
@@ -796,7 +801,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste1.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste2.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
