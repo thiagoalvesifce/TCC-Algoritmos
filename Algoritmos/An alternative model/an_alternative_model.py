@@ -414,44 +414,140 @@ class an_alternative_model():
 
         # MONTANDO CLAUSULAS SOFT, ---------------------------------------------------------------------------------------------------
 
-        # MONTANDO CLAUSULAS HARD, ---------------------------------------------------------------------------------------------------
-    
-        # 1) Garante que pelo menos uma feature esteja em uma regra
+        # 1.1) Garante que pelo menos uma feature esteja em uma regra
 
-        # Para cada regra j das N regras
-        for j in range(self.numClause):
-            new_clause = str(topWeight) + ' '
+        # Se o assignList estiver vazio, entao quer dizer que estamos na primeira particao de dados,
+        # logo devemos CRIAR os literais que representam as colunas
+        if(self.assignList == []):  
+             
+            # Para cada regra j das N regras
+            for j in range(self.numClause):
+                new_clause = str(topWeight) + ' '
 
-            # Para cada feature r das K features
-            for r in range(len(self.columnInfo)):
+                # Para cada feature r das K features
+                for r in range(len(self.columnInfo)):
 
-                # Se a coluna for binaria
-                if(self.columnInfo[r][0] == 1):
-                    # Criando as variaveis ¬sjr
-                    new_clause += '-' + str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1])) + ' '
-                    additionalVariable += 1
-
-                # Se a coluna for categorica ou ordinal
-                elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
-                    # Para cada subcoluna sc
-                    for sc in range(1, len(self.columnInfo[r])):
+                    # Se a coluna for binaria
+                    if(self.columnInfo[r][0] == 1):
                         # Criando as variaveis ¬sjr
-                        new_clause += '-' + str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1])) + ' '
+                        new_clause += '-' + str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1])) + ' '
                         additionalVariable += 1
 
-                # Se não for binaria, categoria ou ordinal e coluna barrada
-                else:
-                    continue
+                    # Se a coluna for categorica ou ordinal
+                    elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
+                        # Para cada subcoluna sc
+                        for sc in range(1, len(self.columnInfo[r])):
+                            # Criando as variaveis ¬sjr
+                            new_clause += '-' + str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1])) + ' '
+                            additionalVariable += 1
+
+                    # Se não for binaria, categoria ou ordinal e coluna barrada
+                    else:
+                        continue
+                
+                new_clause += "0\n"
+                numClauses += 1
+                cnfClauses += new_clause
+
+            # Somando o peso das soft's criadas até aqui
+            topWeight = (self.numClause * (self.columnInfo[-1][-1]//2))
+
+        # Se entrar aqui, o assignList guarda literais da ultima particao
+        else:
+            # Percorrendo os literais que representam as colunas e suas polaridades
+            for l in self.assignList[:(self.numClause * (self.columnInfo[-1][-1]//2) * 2)]:
+                new_clause = str(topWeight) + ' '
+                new_clause += l + ' '
+                new_clause += "0\n"
+                numClauses += 1
+                cnfClauses += new_clause
             
+            # Somando o peso das soft's criadas até aqui
+            topWeight = (self.numClause * (self.columnInfo[-1][-1]//2) * 2)
+
+        # 3.1) Força que todas as regras de todas as linhas cujo y seja = 0, sejam anuladas.
+
+        # Percorrendo todas as linhas e da matriz
+        for e in range(len(yVector)):
+
+            # Averiguando se a linha e tem previsao 0
+            if(yVector[e] == 0):
+                # Voltando para a primeira variavel dº¹j,r
+                djr = (self.numClause * self.columnInfo[-1][-1]) + (self.numClause * (self.columnInfo[-1][-1]//2)) + 1
+
+                # Para cada regra j das N regras
+                for j in range(self.numClause):
+                    new_clause = str(self.dataFidelity) + ' '
+                    topWeight += self.dataFidelity
+
+                    # Para cada feature r das K features
+                    for r in range(len(self.columnInfo)):
+
+                        # Se a coluna for binaria
+                        if(self.columnInfo[r][0] == 1):
+                            # Averiguando se o valor na matriz na linha e nessa coluna é 0 ou 1
+                            # Caso seja 0, entao coloco dºjr. Caso seja 1, entao coloco d¹jr
+                            if(AMatrix[e][self.columnInfo[r][1] - 1] == 0):
+                                new_clause += str(djr) + ' '
+                            else:
+                                new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
+
+                            # Passo para o proximo dº¹j,r
+                            djr += 1
+
+                        # Se a coluna for categorica ou ordinal
+                        elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
+                            # Para cada subcoluna sc
+                            for sc in range(1, len(self.columnInfo[r])):
+                                # Averiguando se o valor na matriz na linha e nessa coluna é 0 ou 1
+                                # Caso seja 0, entao coloco dºjr. Caso seja 1, entao coloco d¹jr
+                                if(AMatrix[e][self.columnInfo[r][sc] - 1] == 0):
+                                    new_clause += str(djr) + ' '
+                                else:
+                                    new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
+
+                                # Passo para o proximo dº¹j,r
+                                djr += 1
+
+                        # Se não for binaria, categoria ou ordinal e coluna barrada
+                        else:
+                            continue
+
+                    new_clause += "0\n"
+                    numClauses += 1
+                    cnfClauses += new_clause
+
+        # 5.1) Garante que a linha com y = 1 tem que ser verdadeira em alguma regra.
+
+        # Definindo onde as variaveis cj,e vao iniciar (ainda sera incrementado + 1)
+        cje = (self.numClause * self.columnInfo[-1][-1]) + (self.numClause * self.columnInfo[-1][-1]//2) + (2 * self.numClause * (self.columnInfo[-1][-1]//2))
+        cje0 = cje + 1
+        cjef = cje + (self.numClause * yVector.count(1))
+
+        for cr in range(cje0, cjef, self.numClause):
+            new_clause = str(self.dataFidelity) + ' '
+            topWeight += self.dataFidelity
+
+            # Para cada regra j das N regras
+            for j in range(self.numClause):
+                new_clause += str(cr) + ' '
+
+                cr += 1
+
             new_clause += "0\n"
             numClauses += 1
             cnfClauses += new_clause
 
+        # MONTANDO CLAUSULAS HARD, ---------------------------------------------------------------------------------------------------
+        
+        # Fazendo com que o topWeight seja maior que a soma das softClauses para pesificar as hard's
+        topWeight += 1 
+
         # 2) Define a variável dº que rejeita as linhas com a feature sendo 0 e o d¹ com as features sendo 1
         
-        # Definindo onde as variaveis dj,r vao iniciar (ainda sera incrementado + 1)
-        ljr = (self.numClause * self.columnInfo[-1][-1])
         # Definindo onde as variaveis lj,r vao iniciar (ainda sera incrementado + 1)
+        ljr = (self.numClause * self.columnInfo[-1][-1])
+        # Definindo onde as variaveis dj,r vao iniciar (ainda sera incrementado + 1)
         djr = ljr + (self.numClause * (self.columnInfo[-1][-1]//2))
 
         # Laco que representa as variaveis dº e d¹
@@ -552,61 +648,6 @@ class an_alternative_model():
             # Resetando lj,r
             ljr = (self.numClause * self.columnInfo[-1][-1])
         
-        # 3) Força que todas as regras de todas as linhas cujo y seja = 0, sejam anuladas.
-
-        # Definindo onde as variaveis cj,e vao iniciar (ainda sera incrementado + 1)
-        cje = djr
-        cje0 = djr + 1
-
-        # Percorrendo todas as linhas e da matriz
-        for e in range(len(yVector)):
-
-            # Averiguando se a linha e tem previsao 0
-            if(yVector[e] == 0):
-                # Voltando para a primeira variavel dº¹j,r
-                djr = (self.numClause * self.columnInfo[-1][-1]) + (self.numClause * (self.columnInfo[-1][-1]//2)) + 1
-
-                # Para cada regra j das N regras
-                for j in range(self.numClause):
-                    new_clause = str(topWeight) + ' '
-
-                    # Para cada feature r das K features
-                    for r in range(len(self.columnInfo)):
-
-                        # Se a coluna for binaria
-                        if(self.columnInfo[r][0] == 1):
-                            # Averiguando se o valor na matriz na linha e nessa coluna é 0 ou 1
-                            # Caso seja 0, entao coloco dºjr. Caso seja 1, entao coloco d¹jr
-                            if(AMatrix[e][self.columnInfo[r][1] - 1] == 0):
-                                new_clause += str(djr) + ' '
-                            else:
-                                new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
-
-                            # Passo para o proximo dº¹j,r
-                            djr += 1
-
-                        # Se a coluna for categorica ou ordinal
-                        elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
-                            # Para cada subcoluna sc
-                            for sc in range(1, len(self.columnInfo[r])):
-                                # Averiguando se o valor na matriz na linha e nessa coluna é 0 ou 1
-                                # Caso seja 0, entao coloco dºjr. Caso seja 1, entao coloco d¹jr
-                                if(AMatrix[e][self.columnInfo[r][sc] - 1] == 0):
-                                    new_clause += str(djr) + ' '
-                                else:
-                                    new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
-
-                                # Passo para o proximo dº¹j,r
-                                djr += 1
-
-                        # Se não for binaria, categoria ou ordinal e coluna barrada
-                        else:
-                            continue
-
-                    new_clause += "0\n"
-                    numClauses += 1
-                    cnfClauses += new_clause
-
         # 4) Define o crj,eq que indica se a linha eq é verdadeira na regra j.
 
         # Percorrendo todas as linhas e da matriz
@@ -686,21 +727,6 @@ class an_alternative_model():
                     numClauses += 1
                     cnfClauses += new_clause                 
         
-        # 5) Garante que a linha com y = 1 tem que ser verdadeira em alguma regra.
-
-        for cr in range(cje0, cje + 1, self.numClause):
-            new_clause = str(topWeight) + ' '
-
-            # Para cada regra j das N regras
-            for j in range(self.numClause):
-                new_clause += str(cr) + ' '
-
-                cr += 1
-
-            new_clause += "0\n"
-            numClauses += 1
-            cnfClauses += new_clause
-
         # write in wcnf format
         header = 'p wcnf ' + str(additionalVariable) + ' ' + str(numClauses) + ' ' + str(topWeight) + '\n'
         f = open(WCNFFile, 'w')
@@ -808,7 +834,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\tabela_depressao - teste2.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
