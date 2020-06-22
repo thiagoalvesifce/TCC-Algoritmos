@@ -278,6 +278,8 @@ class an_alternative_model():
         fields = solution.split()
         zeroOneSolution = []
 
+        fields = self.pruneRules(fields, self.columnInfo[-1][-1])
+
         # Tirando possiveis variaveis postas pelo solver
 
         # Para cada regra j das N regras
@@ -305,8 +307,6 @@ class an_alternative_model():
                 # Se não for binaria, categoria ou ordinal e coluna barrada
                 else:
                     continue
-
-        fields = self.pruneRules(fields, self.columnInfo[-1][-1]//2)
 
         for field in fields:
             if (int(field) > 0):
@@ -871,7 +871,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste2.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
