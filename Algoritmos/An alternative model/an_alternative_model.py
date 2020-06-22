@@ -306,7 +306,7 @@ class an_alternative_model():
                 else:
                     continue
 
-        # fields = self.pruneRules(fields, self.columnInfo[-1][-1])
+        # fields = self.pruneRules(fields, self.columnInfo[-1][-1]//2)
 
         for field in fields:
             if (int(field) > 0):
@@ -414,40 +414,45 @@ class an_alternative_model():
 
         # MONTANDO CLAUSULAS SOFT, ---------------------------------------------------------------------------------------------------
 
-        # 1.1) Garante que pelo menos uma feature esteja em uma regra
+        # 1.1) ...
 
         # Se o assignList estiver vazio, entao quer dizer que estamos na primeira particao de dados,
         # logo devemos CRIAR os literais que representam as colunas
         if(self.assignList == []):  
-             
+
             # Para cada regra j das N regras
             for j in range(self.numClause):
-                new_clause = str(topWeight) + ' '
 
                 # Para cada feature r das K features
                 for r in range(len(self.columnInfo)):
 
                     # Se a coluna for binaria
                     if(self.columnInfo[r][0] == 1):
+                        new_clause = str(topWeight) + ' '
+
                         # Criando as variaveis ¬sjr
-                        new_clause += '-' + str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1])) + ' '
-                        additionalVariable += 1
+                        new_clause += str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1])) + ' '
+
+                        new_clause += "0\n"
+                        numClauses += 1
+                        cnfClauses += new_clause
 
                     # Se a coluna for categorica ou ordinal
                     elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
                         # Para cada subcoluna sc
                         for sc in range(1, len(self.columnInfo[r])):
+                            new_clause = str(topWeight) + ' '
+
                             # Criando as variaveis ¬sjr
-                            new_clause += '-' + str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1])) + ' '
-                            additionalVariable += 1
+                            new_clause += str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1])) + ' '
+
+                            new_clause += "0\n"
+                            numClauses += 1
+                            cnfClauses += new_clause
 
                     # Se não for binaria, categoria ou ordinal e coluna barrada
                     else:
                         continue
-                
-                new_clause += "0\n"
-                numClauses += 1
-                cnfClauses += new_clause
 
             # Somando o peso das soft's criadas até aqui
             topWeight = (self.numClause * (self.columnInfo[-1][-1]//2))
@@ -543,6 +548,37 @@ class an_alternative_model():
         # Fazendo com que o topWeight seja maior que a soma das softClauses para pesificar as hard's
         topWeight += 1 
 
+        # 1) Garante que pelo menos uma feature esteja em uma regra
+
+        # Para cada regra j das N regras
+        for j in range(self.numClause):
+            new_clause = str(topWeight) + ' '
+
+            # Para cada feature r das K features
+            for r in range(len(self.columnInfo)):
+
+                # Se a coluna for binaria
+                if(self.columnInfo[r][0] == 1):
+                    # Criando as variaveis ¬sjr
+                    new_clause += '-' + str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1])) + ' '
+                    additionalVariable += 1
+
+                # Se a coluna for categorica ou ordinal
+                elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
+                    # Para cada subcoluna sc
+                    for sc in range(1, len(self.columnInfo[r])):
+                        # Criando as variaveis ¬sjr
+                        new_clause += '-' + str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1])) + ' '
+                        additionalVariable += 1
+
+                # Se não for binaria, categoria ou ordinal e coluna barrada
+                else:
+                    continue
+            
+            new_clause += "0\n"
+            numClauses += 1
+            cnfClauses += new_clause
+
         # 2) Define a variável dº que rejeita as linhas com a feature sendo 0 e o d¹ com as features sendo 1
         
         # Definindo onde as variaveis lj,r vao iniciar (ainda sera incrementado + 1)
@@ -564,7 +600,7 @@ class an_alternative_model():
                         # Criando variavel dº¹j,r e lj,r
                         djr += 1
                         ljr += 1
-                        additionalVariable += 2
+                        additionalVariable += 1 + (d * 1)
                         
                         # (¬dº¹j,r V ¬sjr)
                         new_clause = str(topWeight) + ' '
@@ -606,7 +642,8 @@ class an_alternative_model():
                             # Criando variavel dº¹j,r e lj,r
                             djr += 1
                             ljr += 1
-                            additionalVariable += 2
+                            # So conto as variaveis lj,r a partir do d¹j,r (quantidade de lj,r e metade de dj,r)
+                            additionalVariable += 1 + (d * 1)
                             
                             # (¬dº¹j,r V ¬sjr)
                             new_clause = str(topWeight) + ' '
@@ -834,7 +871,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste2.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
