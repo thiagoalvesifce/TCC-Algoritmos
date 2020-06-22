@@ -306,7 +306,7 @@ class an_alternative_model():
                 else:
                     continue
 
-        # fields = self.pruneRules(fields, self.columnInfo[-1][-1]//2)
+        fields = self.pruneRules(fields, self.columnInfo[-1][-1]//2)
 
         for field in fields:
             if (int(field) > 0):
