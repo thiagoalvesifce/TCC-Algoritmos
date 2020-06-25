@@ -802,7 +802,15 @@ class an_alternative_model():
                     if (variable <= end_of_column_list[j]):
                         variable_contained_list[clause_position][j].append(clause_position * xSize + variable)
                         freq_end_of_column_list[clause_position][j][0] += 1
-                        freq_end_of_column_list[clause_position][j][1] = self.columnInfo[j][0]
+                        # Averiguo se a coluna e do tipo ordinal normal
+                        if(self.columnInfo[j][0] == 4):
+                            # Averiguo se a polaridade dela e normal ou barrada
+                            if(int(fields[(clause_position * xSize + variable) + (self.numClause * self.columnInfo[-1][-1]) - 1]) > 0):
+                                freq_end_of_column_list[clause_position][j][1] = self.columnInfo[j][0]
+                            else:
+                                freq_end_of_column_list[clause_position][j][1] = 5
+                        else:
+                            freq_end_of_column_list[clause_position][j][1] = self.columnInfo[j][0]
                         break
         
         # percorrera o numero de regras
