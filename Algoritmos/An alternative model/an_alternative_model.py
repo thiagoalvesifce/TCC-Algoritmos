@@ -600,6 +600,7 @@ class an_alternative_model():
                         # Criando variavel dº¹j,r e lj,r
                         djr += 1
                         ljr += 1
+                        # So conto as variaveis lj,r a partir do d¹j,r (quantidade de lj,r e metade de dj,r)
                         additionalVariable += 1 + (d * 1)
                         
                         # (¬dº¹j,r V ¬sjr)
@@ -798,19 +799,18 @@ class an_alternative_model():
                 # percorre todas as colunas adicionadas no end_of_column_list
                 for j in range(len(end_of_column_list)):
 
-                    # averiguando se o valor do literal e menor ou igual ao valor da coluna guardada no indice j do end_of_column_list
-                    if (variable <= end_of_column_list[j]):
+                    # Averiguando se o valor do literal e menor ou igual ao valor da coluna guardada no indice j do end_of_column_list
+                    # e se ela e ordinal normal
+                    if ((variable <= end_of_column_list[j]) and (self.columnInfo[j][0] == 4)):
                         variable_contained_list[clause_position][j].append(clause_position * xSize + variable)
                         freq_end_of_column_list[clause_position][j][0] += 1
-                        # Averiguo se a coluna e do tipo ordinal normal
-                        if(self.columnInfo[j][0] == 4):
-                            # Averiguo se a polaridade dela e normal ou barrada
-                            if(int(fields[(clause_position * xSize + variable) + (self.numClause * self.columnInfo[-1][-1]) - 1]) > 0):
-                                freq_end_of_column_list[clause_position][j][1] = self.columnInfo[j][0]
-                            else:
-                                freq_end_of_column_list[clause_position][j][1] = 5
-                        else:
+                        
+                        # Averiguo se a polaridade dela e normal ou barrada
+                        if(int(fields[(clause_position * xSize + variable) + (self.numClause * self.columnInfo[-1][-1]) - 1]) > 0):
                             freq_end_of_column_list[clause_position][j][1] = self.columnInfo[j][0]
+                        else:
+                            freq_end_of_column_list[clause_position][j][1] = 5
+                        
                         break
         
         # percorrera o numero de regras
@@ -879,7 +879,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste3.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
