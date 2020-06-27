@@ -316,12 +316,21 @@ class an_alternative_model():
                 zeroOneSolution.append(0.0)
             
         self.xhat = []
+        # Testando o xhat
+        xhatTest = []
 
         for i in range(self.numClause):
             self.xhat.append(
                 np.concatenate((
                     np.array(zeroOneSolution[i * (self.columnInfo[-1][-1]//2):(i + 1) * (self.columnInfo[-1][-1]//2)]),
                     np.array(zeroOneSolution[(i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2):((i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2)) + (self.columnInfo[-1][-1]//2)])
+                )) 
+            )
+            # xhatTest
+            xhatTest.append(
+                np.concatenate((
+                    np.array(fields[i * (self.columnInfo[-1][-1]//2):(i + 1) * (self.columnInfo[-1][-1]//2)]),
+                    np.array(fields[(i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2):((i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2)) + (self.columnInfo[-1][-1]//2)])
                 )) 
             )
 
@@ -786,6 +795,9 @@ class an_alternative_model():
         # matriz que guarda os literais positivos de suas repectivas colunas barrada
         variable_contained_list = [[[] for i in range(len(end_of_column_list))] for j in range(self.numClause)]
 
+        # variavel que representa o indice das variaveis l's no array fields
+        l_position = self.numClause * self.columnInfo[-1][-1]
+
         # percorre todas as colunas que estarao na(s) regra(s)
         for i in range(self.numClause * xSize):
             # se o valor do literal nessa coluna for negativo (vai estar na regra) ...
@@ -800,19 +812,69 @@ class an_alternative_model():
                 for j in range(len(end_of_column_list)):
 
                     # Averiguando se o valor do literal e menor ou igual ao valor da coluna guardada no indice j do end_of_column_list
-                    # e se ela e ordinal normal
-                    if ((variable <= end_of_column_list[j]) and (self.columnInfo[j][0] == 4)):
-                        variable_contained_list[clause_position][j].append(clause_position * xSize + variable)
-                        freq_end_of_column_list[clause_position][j][0] += 1
+                    if (variable <= end_of_column_list[j]):
+
+                        # Averiguando se a coluna e normal (binaria), pois se for eu pulo o lj,r dela
+                        if(self.columnInfo[j][0] == 1):
+                            if(variable == self.columnInfo[j][1]):
+                                # Proxima coluna, entao proximo l
+                                l_position += 1
+                            break
+
+                        # Averiguando se a coluna e normal (categorica), pois se for eu pulo o lj,r dela
+                        elif(self.columnInfo[j][0] == 2):
+                            # Proxima coluna, entao proximo l
+                            l_position += 1
+                            break
                         
-                        # Averiguo se a polaridade dela e normal ou barrada
-                        if(int(fields[(clause_position * xSize + variable) + (self.numClause * self.columnInfo[-1][-1]) - 1]) > 0):
-                            freq_end_of_column_list[clause_position][j][1] = self.columnInfo[j][0]
+                        # Averiguo se ela e ordinal normal
+                        elif(self.columnInfo[j][0] == 4):
+                            variable_contained_list[clause_position][j].append(clause_position * xSize + variable)
+                            freq_end_of_column_list[clause_position][j][0] += 1
+                            
+                            # Averiguo se a polaridade dela e normal ou barrada
+                            if(int(fields[l_position]) > 0):
+                                freq_end_of_column_list[clause_position][j][1] = self.columnInfo[j][0]
+                            else:
+                                freq_end_of_column_list[clause_position][j][1] = 5
+                            
+                            # Proxima coluna, entao proximo l
+                            l_position += 1
+                            
+                            break
+
+                        # Caso caia aqui, essa coluna nao precisa ser registrada, passo para a proxima
                         else:
-                            freq_end_of_column_list[clause_position][j][1] = 5
-                        
-                        break
-        
+                            break
+
+            # Se for positivo, preciso averiguar se e alguma coluna normal para contar o indice do lj'r
+            else:
+                # variavel que representa o valor do literal (nunca maior que o valor do literal que representa a ultima coluna)
+                variable = (int(fields[i]) - 1) % xSize + 1
+
+                # percorre todas as colunas adicionadas no end_of_column_list
+                for j in range(len(end_of_column_list)):
+
+                    # Averiguando se o valor do literal e menor ou igual ao valor da coluna guardada no indice j do end_of_column_list
+                    if (variable <= end_of_column_list[j]):
+
+                        # Averiguando se a coluna e normal (binaria), pois se for eu pulo o lj,r dela
+                        if(self.columnInfo[j][0] == 1):
+                            if(variable == self.columnInfo[j][1]):
+                                # Proxima coluna, entao proximo l
+                                l_position += 1
+                            break
+
+                        # Averiguando se a coluna e normal (binaria, categorica), pois se for eu pulo o lj,r dela
+                        elif(self.columnInfo[j][0] == 2 or self.columnInfo[j][0] == 4):
+                            # Proxima coluna, entao proximo lj'r
+                            l_position += 1
+                            break
+
+                        # Caso caia aqui, essa coluna nao precisa ser registrada, passo para a proxima
+                        else:
+                            break
+
         # percorrera o numero de regras
         for l in range(self.numClause):
 
@@ -879,7 +941,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste3.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
