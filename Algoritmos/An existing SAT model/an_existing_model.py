@@ -227,6 +227,44 @@ class an_existing_model():
                 yhat.append(yTest[i])
         return yhat
 
+    def predict2(self, XTest):
+        rule = self.getSelectedColumnIndex()
+        y = []
+        
+        # para cada linha da matriz
+        for e in range(len(XTest)):
+            prediction = False
+            
+            # para cada clausula
+            for j in range(len(rule)):
+                
+                # para cada coluna da clausula
+                for r in range(len(rule[j])):
+                    if(self.ruleType == 'DNF'):
+                        if(XTest[e][ rule[j][r] ] == 0):
+                            prediction = False
+                            break
+                        else:
+                            prediction = True
+                    elif(self.ruleType == 'CNF'):
+                        if(XTest[e][ rule[j][r] ] == 1):
+                            prediction = True
+                            break
+                        else:
+                            prediction = False
+
+                if(self.ruleType == 'DNF' and prediction == True):
+                    break
+                elif(self.ruleType == 'CNF' and prediction == False):
+                    break
+            
+            if(prediction == False):
+                y.append(0)
+            else:
+                y.append(1)
+        
+        return y
+
     def learnModel(self, X, y, isTest):
         # temp files to save maxsat query in wcnf format
         WCNFFile = self.workDir + "/" + "model.wcnf"
@@ -276,6 +314,8 @@ class an_existing_model():
                 break
 
         fields = solution.split()
+        TrueRules = []
+        TrueErrors = []
         zeroOneSolution = []
 
         fields = self.pruneRules(fields, self.columnInfo[-1][-1])
@@ -283,9 +323,22 @@ class an_existing_model():
         for field in fields:
             if (int(field) > 0):
                 zeroOneSolution.append(1.0)
-
+                    
             else:
                 zeroOneSolution.append(0.0)
+
+                # Averiguando se esse literal representa uma coluna
+                if (abs(int(field)) <= self.numClause * self.columnInfo[-1][-1]):
+                    TrueRules.append(str(abs(int(field))))
+                
+                # Averiguando se esse literal representa uma variavel ...(deveria ser um conjunto de variaveis que representasse o acerto de uma linha)
+                # ELIF a ser TRABALHADO !!!! ...                         (além disso, aqui esta colocando como erro a linha que a variavel der negativa)
+                elif (self.numClause * len(X[0]) < abs(int(field)) <= self.numClause * len(
+                        X[0]) + len(y)):
+                    TrueErrors.append(field)
+
+        #     print("The number of True Rule are: " + str(len(TrueRules)))
+        #     print("The number of errors are:    " + str(len(TrueErrors)) + " out of " + str(len(y)))
             
         self.xhat = []
 
@@ -298,6 +351,8 @@ class an_existing_model():
 
         if (not isTest):
             self.assignList = fields[:self.numClause * (self.columnInfo[-1][-1])]
+            self.trainingError += len(TrueErrors)
+            self.selectedFeatureIndex = TrueRules
 
         return fields[self.numClause * self.columnInfo[-1][-1]:]
 
@@ -712,7 +767,7 @@ class an_existing_model():
 model = an_existing_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\tabela_depressao.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
@@ -724,3 +779,12 @@ model.fit(X,y)
 rule = model.getRule()
 
 print(rule)
+
+#indice das colunas que estao na regra
+columnsError = model.getSelectedColumnIndex()
+print('======= RULES COLUMN INDEX =======')
+print(columnsError)
+print('==================================')
+
+#previsao do teste
+print(model.predict2(X))
