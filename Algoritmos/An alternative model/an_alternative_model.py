@@ -227,6 +227,42 @@ class an_alternative_model():
                 yhat.append(yTest[i])
         return yhat
 
+    def predict2(self, XTest):
+        rule = self.getSelectedColumnIndex()
+        y = []
+
+        prediction = 0
+        
+        # para cada linha da matriz
+        for e in range(len(XTest)):
+            
+            # para cada clausula
+            for j in range(len(rule)):
+                
+                # para cada coluna da clausula
+                for r in range(len(rule[j])):
+                    if(self.ruleType == 'DNF'):
+                        if(XTest[e][ rule[j][r] ] == 0):
+                            prediction = 0
+                            break
+                        else:
+                            prediction = 1
+                    elif(self.ruleType == 'CNF'):
+                        if(XTest[e][ rule[j][r] ] == 1):
+                            prediction = 1
+                            break
+                        else:
+                            prediction = 0
+
+                if(self.ruleType == 'DNF' and prediction == 1):
+                    break
+                elif(self.ruleType == 'CNF' and prediction == 0):
+                    break
+
+            y.append(prediction)
+        
+        return y
+
     def learnModel(self, X, y, isTest):
         # temp files to save maxsat query in wcnf format
         WCNFFile = self.workDir + "/" + "model.wcnf"
@@ -276,6 +312,8 @@ class an_alternative_model():
                 break
 
         fields = solution.split()
+        TrueRules = []
+        TrueErrors = []
         zeroOneSolution = []
 
         fields = self.pruneRules(fields, self.columnInfo[-1][-1])
@@ -314,11 +352,22 @@ class an_alternative_model():
 
             else:
                 zeroOneSolution.append(0.0)
+
+                # Averiguando se esse literal representa uma coluna
+                if (abs(int(field)) <= self.numClause * self.columnInfo[-1][-1]):
+                    TrueRules.append(str(abs(int(field))))
+                
+                # Averiguando se esse literal representa uma variavel ...(deveria ser um conjunto de variaveis que representasse o acerto de uma linha)
+                # ELIF a ser TRABALHADO !!!! ...                         (além disso, aqui esta colocando como erro a linha que a variavel der negativa)
+                elif (self.numClause * len(X[0]) < abs(int(field)) <= self.numClause * len(
+                        X[0]) + len(y)):
+                    TrueErrors.append(field)
             
         self.xhat = []
         # Testando o xhat
+        '''
         xhatTest = []
-
+        '''
         for i in range(self.numClause):
             self.xhat.append(
                 np.concatenate((
@@ -327,19 +376,22 @@ class an_alternative_model():
                 )) 
             )
             # xhatTest
+            '''
             xhatTest.append(
                 np.concatenate((
                     np.array(fields[i * (self.columnInfo[-1][-1]//2):(i + 1) * (self.columnInfo[-1][-1]//2)]),
                     np.array(fields[(i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2):((i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2)) + (self.columnInfo[-1][-1]//2)])
                 )) 
             )
-
+            '''
         # delete temp files
         cmd = "rm " + outputFileMaxsat
         os.system(cmd)
 
         if (not isTest):
             self.assignList = fields[:(self.numClause * (self.columnInfo[-1][-1]//2))+(self.numClause * (self.columnInfo[-1][-1]//2))]
+            self.trainingError += len(TrueErrors)
+            self.selectedFeatureIndex = TrueRules
 
         return fields[(self.numClause * (self.columnInfo[-1][-1]//2))+(self.numClause * (self.columnInfo[-1][-1]//2)):]
 
@@ -941,7 +993,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\tabela_depressao.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
@@ -951,5 +1003,13 @@ model.fit(X,y)
 
 #guardando as regras geradas pelo treino
 rule = model.getRule()
-
 print(rule)
+
+#indice das colunas que estao na regra
+columnsError = model.getSelectedColumnIndex()
+print('======= RULES COLUMN INDEX =======')
+print(columnsError)
+print('==================================')
+
+#previsao do teste
+print(model.predict2(X))
