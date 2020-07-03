@@ -230,10 +230,11 @@ class an_existing_model():
     def predict2(self, XTest):
         rule = self.getSelectedColumnIndex()
         y = []
+
+        prediction = 0
         
         # para cada linha da matriz
         for e in range(len(XTest)):
-            prediction = False
             
             # para cada clausula
             for j in range(len(rule)):
@@ -242,26 +243,23 @@ class an_existing_model():
                 for r in range(len(rule[j])):
                     if(self.ruleType == 'DNF'):
                         if(XTest[e][ rule[j][r] ] == 0):
-                            prediction = False
+                            prediction = 0
                             break
                         else:
-                            prediction = True
+                            prediction = 1
                     elif(self.ruleType == 'CNF'):
                         if(XTest[e][ rule[j][r] ] == 1):
-                            prediction = True
+                            prediction = 1
                             break
                         else:
-                            prediction = False
+                            prediction = 0
 
-                if(self.ruleType == 'DNF' and prediction == True):
+                if(self.ruleType == 'DNF' and prediction == 1):
                     break
-                elif(self.ruleType == 'CNF' and prediction == False):
+                elif(self.ruleType == 'CNF' and prediction == 0):
                     break
-            
-            if(prediction == False):
-                y.append(0)
-            else:
-                y.append(1)
+
+            y.append(prediction)
         
         return y
 
