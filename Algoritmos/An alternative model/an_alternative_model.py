@@ -263,6 +263,16 @@ class an_alternative_model():
         
         return y
 
+    def score(self, XTest, y):
+        yTest = self.predict2(XTest)
+
+        hits = 0
+        for i in range(len(yTest)):
+            if(yTest[i] == y[i]):
+                hits += 1
+        
+        return hits/len(yTest)
+
     def learnModel(self, X, y, isTest):
         # temp files to save maxsat query in wcnf format
         WCNFFile = self.workDir + "/" + "model.wcnf"
@@ -1013,3 +1023,5 @@ print('==================================')
 
 #previsao do teste
 print(model.predict2(X))
+
+print(model.score(X, y))
