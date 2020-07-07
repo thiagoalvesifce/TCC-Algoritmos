@@ -220,6 +220,16 @@ class imli():
                 yhat.append(yTest[i])
         return yhat
 
+    def score(self, XTest, y):
+        yTest = self.predict(XTest, y)
+
+        hits = 0
+        for i in range(len(yTest)):
+            if(yTest[i] == y[i]):
+                hits += 1
+        
+        return hits/len(yTest)
+
     def learnModel(self, X, y, isTest):
         # temp files to save maxsat query in wcnf format
         WCNFFile = self.workDir + "/" + "model.wcnf"
@@ -290,8 +300,8 @@ class imli():
                     TrueErrors.append(field)
 
         # if (self.verbose):
-        #     print("The number of True Rule are: " + str(len(TrueRules)))
-        #     print("The number of errors are:    " + str(len(TrueErrors)) + " out of " + str(len(y)))
+        #   print("The number of True Rule are: " + str(len(TrueRules)))
+        #   print("The number of errors are:    " + str(len(TrueErrors)) + " out of " + str(len(y)))
         self.xhat = []
 
         for i in range(self.numClause):
@@ -574,8 +584,28 @@ X,y=model.discretize(arq)
 
 #treinando o modelo usando a discretizacao da tabela
 model.fit(X,y)
+answer = model.predict(X,y)
+print('======= PREDICT =======')
+print(answer)
+print('=======================')
 
 #guardando as regras geradas pelo treino
 rule = model.getRule()
-
+print('======= RULES =======')
 print(rule)
+print('=====================')
+
+#TESTANDO ---------------------------------------------------------------------------
+#numero de erros
+error = model.getTrainingError()
+print('======= NUMBER OF ERRORS =======')
+print(error)
+print('================================')
+
+#indice das colunas que estao na regra
+columnsError = model.getSelectedColumnIndex()
+print('======= RULES COLUMN INDEX =======')
+print(columnsError)
+print('==================================')
+
+print(model.score(X, y))
