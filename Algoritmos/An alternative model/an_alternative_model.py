@@ -56,6 +56,46 @@ class an_alternative_model():
             return_list[int(new_index/ySize)].append(new_index % ySize)
         return return_list
 
+    def getSelectedColumnIndex2(self):
+        return_list = [[] for i in range(self.numClause)]
+        
+        for i in range(self.numClause):
+            # guarda todas as colunas e suas respectivas polaridades na regra i
+            xHatElem = self.xhat[i]
+            xHatFieldElement = self.xhatField[i]
+
+            # filtro apenas as colunas que irao aparecer na regra guardando o indice
+            inds_nnz = np.where(abs(xHatElem[0:self.columnInfo[-1][-1]//2]) < 1e-4)[0]
+
+            # pra cada coluna, representada pelo seu indice inds, que ira aparecer na regra...
+            for inds in inds_nnz:
+
+                # procuro que tipo de coluna e
+                for t in range(len(self.columnInfo)):
+                    # calculando o valor do literal da coluna nunca maior que o numero de colunas
+                    variable = (abs(int(xHatFieldElement[inds])) - 1) % self.columnInfo[-1][-1] + 1
+
+                    if (self.columnInfo[t][1:].__contains__( variable )):
+                        # se a coluna for binaria ...
+                        if (self.columnInfo[t][0] == 1):
+                            # averiguo a polaridade
+                            if(xHatElem[inds + (self.columnInfo[-1][-1]//2)] > 1e-4):
+                                return_list[i].append(variable - 1)
+                            else:
+                                return_list[i].append((variable - 1) + 1)
+
+                        # se a coluna for categorica ou ordinal ...
+                        elif (self.columnInfo[t][0] == 2 or self.columnInfo[t][0] == 4):
+                            # averiguo a polaridade
+                            if(xHatElem[inds + (self.columnInfo[-1][-1]//2)] > 1e-4):
+                                return_list[i].append(variable - 1)
+                            else:
+                                return_list[i].append((variable - 1) + len(self.columnInfo[t][1:]))
+
+                        break
+
+        return return_list
+
     def getNumOfPartition(self):
         return self.numPartition
 
@@ -228,7 +268,7 @@ class an_alternative_model():
         return yhat
 
     def predict2(self, XTest):
-        rule = self.getSelectedColumnIndex()
+        ruleIndex = self.getSelectedColumnIndex2()
         y = []
 
         prediction = 0
@@ -237,18 +277,18 @@ class an_alternative_model():
         for e in range(len(XTest)):
             
             # para cada clausula
-            for j in range(len(rule)):
+            for j in range(len(ruleIndex)):
                 
                 # para cada coluna da clausula
-                for r in range(len(rule[j])):
+                for r in range(len(ruleIndex[j])):
                     if(self.ruleType == 'DNF'):
-                        if(XTest[e][ rule[j][r] ] == 0):
+                        if(XTest[e][ ruleIndex[j][r] ] == 0):
                             prediction = 0
                             break
                         else:
                             prediction = 1
                     elif(self.ruleType == 'CNF'):
-                        if(XTest[e][ rule[j][r] ] == 1):
+                        if(XTest[e][ ruleIndex[j][r] ] == 1):
                             prediction = 1
                             break
                         else:
@@ -1026,12 +1066,8 @@ X,y=model.discretize(arq)
 #treinando o modelo usando a discretizacao da tabela
 model.fit(X,y)
 
-#guardando as regras geradas pelo treino
-rule = model.getRule()
-print(rule)
-
 #indice das colunas que estao na regra
-columnsError = model.getSelectedColumnIndex()
+columnsError = model.getSelectedColumnIndex2()
 print('======= RULES COLUMN INDEX =======')
 print(columnsError)
 print('==================================')
@@ -1040,3 +1076,7 @@ print('==================================')
 print(model.predict2(X))
 
 print(model.score(X, y))
+
+#guardando as regras geradas pelo treino
+rule = model.getRule()
+print(rule)
