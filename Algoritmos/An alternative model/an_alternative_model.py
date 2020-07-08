@@ -374,10 +374,8 @@ class an_alternative_model():
                     TrueErrors.append(field)
             
         self.xhat = []
-        # Testando o xhat
-        '''
-        xhatTest = []
-        '''
+        self.xhatField = []
+        
         for i in range(self.numClause):
             self.xhat.append(
                 np.concatenate((
@@ -385,15 +383,14 @@ class an_alternative_model():
                     np.array(zeroOneSolution[(i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2):((i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2)) + (self.columnInfo[-1][-1]//2)])
                 )) 
             )
-            # xhatTest
-            '''
-            xhatTest.append(
+            
+            self.xhatField.append(
                 np.concatenate((
                     np.array(fields[i * (self.columnInfo[-1][-1]//2):(i + 1) * (self.columnInfo[-1][-1]//2)]),
                     np.array(fields[(i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2):((i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2)) + (self.columnInfo[-1][-1]//2)])
                 )) 
             )
-            '''
+        
         # delete temp files
         cmd = "rm " + outputFileMaxsat
         os.system(cmd)
@@ -964,28 +961,63 @@ class an_alternative_model():
     def getRule(self):
         generatedRule = '( '
         for i in range(self.numClause):
+            # guarda todas as colunas e suas respectivas polaridades na regra i
             xHatElem = self.xhat[i]
+            xHatFieldElement = self.xhatField[i]
+
+            # filtro apenas as colunas que irao aparecer na regra guardando o indice
             inds_nnz = np.where(abs(xHatElem[0:self.columnInfo[-1][-1]//2]) < 1e-4)[0]
 
             str_clauses = []
+            # indice das colunas com as string's(self.columns)
+            indice_columns = 0
+            # pra cada coluna, representada pelo seu indice inds, que ira aparecer na regra...
             for inds in inds_nnz:
-                if(xHatElem[inds + (self.columnInfo[-1][-1]//2)] > 1e-4):
-                    str_clauses.append(' '.join(self.columns[inds * 2]))
-                else:
-                    str_clauses.append(' '.join(self.columns[(inds * 2) + 1]))
 
-            # str_clauses = [' '.join(self.columns[ind]) for ind in inds_nnz]
+                # procuro que tipo de coluna e
+                for t in range(len(self.columnInfo)):
+                    # calculando o valor do literalda variavel nunca maior que o numero de colunas
+                    variable = (abs(int(xHatFieldElement[inds])) - 1) % self.columnInfo[-1][-1] + 1
+
+                    if (self.columnInfo[t][1:].__contains__( variable )):
+                        # se a coluna for binaria ...
+                        if (self.columnInfo[t][0] == 1):
+                            # averiguo a polaridade
+                            if(xHatElem[inds + (self.columnInfo[-1][-1]//2)] > 1e-4):
+                                str_clauses.append(' '.join(self.columns[indice_columns]))
+                            else:
+                                str_clauses.append(' '.join(self.columns[indice_columns + 1]))
+
+                            # pulo os indices da strings normais e barradas dessa coluna
+                            indice_columns += 2
+
+                        # se a coluna for categorica ou ordinal ...
+                        elif (self.columnInfo[t][0] == 2 or self.columnInfo[t][0] == 4):
+                            # averiguo a polaridade
+                            if(xHatElem[inds + (self.columnInfo[-1][-1]//2)] > 1e-4):
+                                str_clauses.append(' '.join(self.columns[indice_columns]))
+                            else:
+                                str_clauses.append(' '.join(self.columns[indice_columns + len(self.columnInfo[t][1:])]))
+                            
+                            # pulo os indices das strings normais e barradas dessa coluna
+                            indice_columns += len(self.columnInfo[t][1:]) * 2
+
+                        # se for categorica ou ordinal barrada, devo pular os indices do columns
+                        else:
+                            continue
+
+                        break
+
+                    # se nao estava nessa coluna, entao devo pular ela toda no columns
+                    else:
+                        # pulo os indices das strings dessa coluna
+                        indice_columns += len(self.columnInfo[t][1:])
+
             if (self.ruleType == "CNF"):
                 rule_sep = ' %s ' % "or"
             else:
                 rule_sep = ' %s ' % "and"
             rule_str = rule_sep.join(str_clauses)
-            '''
-            if (self.ruleType == 'DNF'):
-                rule_str = rule_str.replace('<=', '??').replace('>', '<=').replace('??', '>')
-                rule_str = rule_str.replace('==', '??').replace('!=', '==').replace('??', '!=')
-                rule_str = rule_str.replace('is', '??').replace('is not', 'is').replace('??', 'is not')
-            '''
 
             generatedRule += rule_str
             if (i < self.numClause - 1):
@@ -1003,7 +1035,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\tabela_depressao.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\teste1.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
