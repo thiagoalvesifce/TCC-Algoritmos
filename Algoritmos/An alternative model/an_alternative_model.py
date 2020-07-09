@@ -109,6 +109,23 @@ class an_alternative_model():
     def getSolver(self):
         return self.solver
 
+    def getRuleSize(self):
+        ruleIndex = self.getSelectedColumnIndex()
+        sR = 0
+        for j in range(len(ruleIndex)):
+            sR += len(ruleIndex[j])
+        
+        return sR
+
+    def getBiggestRuleSize(self):
+        ruleIndex = self.getSelectedColumnIndex()
+        bR = 0
+        for j in range(len(ruleIndex)):
+            if (len(ruleIndex[j]) >= bR):
+                bR = len(ruleIndex[j])
+        
+        return bR
+
     def discretize(self, file, categoricalColumnIndex=[], columnSeperator=",", fracPresent=0.9, numThreshold=4):
 
         # Quantile probabilities
@@ -1060,3 +1077,7 @@ print(model.predict(X))
 '''
 
 print('Score:',model.score(X, y))
+
+# printando o numero de regras e o numero da maior regra, respectivamente
+print('Rules number:', model.getRuleSize())
+print('Biggest rule number:', model.getBiggestRuleSize())
