@@ -50,14 +50,6 @@ class an_alternative_model():
 
     def getSelectedColumnIndex(self):
         return_list = [[] for i in range(self.numClause)]
-        ySize = len(self.columns)
-        for elem in self.selectedFeatureIndex:
-            new_index = int(elem)-1
-            return_list[int(new_index/ySize)].append(new_index % ySize)
-        return return_list
-
-    def getSelectedColumnIndex2(self):
-        return_list = [[] for i in range(self.numClause)]
         
         for i in range(self.numClause):
             # guarda todas as colunas e suas respectivas polaridades na regra i
@@ -257,18 +249,8 @@ class an_alternative_model():
         for each_partition in range(self.numPartition):
             self.learnModel(XTrains[each_partition], yTrains[each_partition], isTest=False)
 
-    def predict(self, XTest, yTest):
-        predictions = self.learnModel(XTest, yTest, isTest=True)
-        yhat = []
-        for i in range(len(predictions)):
-            if (int(predictions[i]) > 0):
-                yhat.append(1 - yTest[i])
-            else:
-                yhat.append(yTest[i])
-        return yhat
-
-    def predict2(self, XTest):
-        ruleIndex = self.getSelectedColumnIndex2()
+    def predict(self, XTest):
+        ruleIndex = self.getSelectedColumnIndex()
         y = []
 
         prediction = 0
@@ -304,7 +286,7 @@ class an_alternative_model():
         return y
 
     def score(self, XTest, y):
-        yTest = self.predict2(XTest)
+        yTest = self.predict(XTest)
 
         hits = 0
         for i in range(len(yTest)):
@@ -406,12 +388,6 @@ class an_alternative_model():
                 # Averiguando se esse literal representa uma coluna
                 if (abs(int(field)) <= self.numClause * self.columnInfo[-1][-1]):
                     TrueRules.append(str(abs(int(field))))
-                
-                # Averiguando se esse literal representa uma variavel ...(deveria ser um conjunto de variaveis que representasse o acerto de uma linha)
-                # ELIF a ser TRABALHADO !!!! ...                         (além disso, aqui esta colocando como erro a linha que a variavel der negativa)
-                elif (self.numClause * len(X[0]) < abs(int(field)) <= self.numClause * len(
-                        X[0]) + len(y)):
-                    TrueErrors.append(field)
             
         self.xhat = []
         self.xhatField = []
@@ -1066,17 +1042,21 @@ X,y=model.discretize(arq)
 #treinando o modelo usando a discretizacao da tabela
 model.fit(X,y)
 
+#guardando as regras geradas pelo treino
+rule = model.getRule()
+print('============== RULE ==============')
+print(rule)
+print('==================================')
+
+'''
 #indice das colunas que estao na regra
-columnsError = model.getSelectedColumnIndex2()
+columnsError = model.getSelectedColumnIndex()
 print('======= RULES COLUMN INDEX =======')
 print(columnsError)
 print('==================================')
 
 #previsao do teste
-print(model.predict2(X))
+print(model.predict(X))
+'''
 
-print(model.score(X, y))
-
-#guardando as regras geradas pelo treino
-rule = model.getRule()
-print(rule)
+print('Score:',model.score(X, y))
