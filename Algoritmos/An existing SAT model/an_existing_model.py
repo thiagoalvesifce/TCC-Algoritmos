@@ -217,17 +217,7 @@ class an_existing_model():
         for each_partition in range(self.numPartition):
             self.learnModel(XTrains[each_partition], yTrains[each_partition], isTest=False)
 
-    def predict(self, XTest, yTest):
-        predictions = self.learnModel(XTest, yTest, isTest=True)
-        yhat = []
-        for i in range(len(predictions)):
-            if (int(predictions[i]) > 0):
-                yhat.append(1 - yTest[i])
-            else:
-                yhat.append(yTest[i])
-        return yhat
-
-    def predict2(self, XTest):
+    def predict(self, XTest):
         rule = self.getSelectedColumnIndex()
         y = []
 
@@ -264,7 +254,7 @@ class an_existing_model():
         return y
 
     def score(self, XTest, y):
-        yTest = self.predict2(XTest)
+        yTest = self.predict(XTest)
 
         hits = 0
         for i in range(len(yTest)):
@@ -338,15 +328,6 @@ class an_existing_model():
                 # Averiguando se esse literal representa uma coluna
                 if (abs(int(field)) <= self.numClause * self.columnInfo[-1][-1]):
                     TrueRules.append(str(abs(int(field))))
-                
-                # Averiguando se esse literal representa uma variavel ...(deveria ser um conjunto de variaveis que representasse o acerto de uma linha)
-                # ELIF a ser TRABALHADO !!!! ...                         (além disso, aqui esta colocando como erro a linha que a variavel der negativa)
-                elif (self.numClause * len(X[0]) < abs(int(field)) <= self.numClause * len(
-                        X[0]) + len(y)):
-                    TrueErrors.append(field)
-
-        #     print("The number of True Rule are: " + str(len(TrueRules)))
-        #     print("The number of errors are:    " + str(len(TrueErrors)) + " out of " + str(len(y)))
             
         self.xhat = []
 
@@ -752,12 +733,6 @@ class an_existing_model():
             else:
                 rule_sep = ' %s ' % "and"
             rule_str = rule_sep.join(str_clauses)
-            '''
-            if (self.ruleType == 'DNF'):
-                rule_str = rule_str.replace('<=', '??').replace('>', '<=').replace('??', '>')
-                rule_str = rule_str.replace('==', '??').replace('!=', '==').replace('??', '!=')
-                rule_str = rule_str.replace('is', '??').replace('is not', 'is').replace('??', 'is not')
-            '''
 
             generatedRule += rule_str
             if (i < self.numClause - 1):
@@ -775,7 +750,7 @@ class an_existing_model():
 model = an_existing_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\tabela_depressao.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
@@ -785,9 +760,11 @@ model.fit(X,y)
 
 #guardando as regras geradas pelo treino
 rule = model.getRule()
-
+print('============== RULE ==============')
 print(rule)
+print('==================================')
 
+'''
 #indice das colunas que estao na regra
 columnsError = model.getSelectedColumnIndex()
 print('======= RULES COLUMN INDEX =======')
@@ -795,4 +772,8 @@ print(columnsError)
 print('==================================')
 
 #previsao do teste
-print(model.predict2(X))
+print(model.predict(X))
+'''
+
+#precisao do teste 
+print('Score:', model.score(X, y))
