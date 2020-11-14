@@ -250,7 +250,7 @@ class an_alternative_model():
     def fit(self, XTrain, yTrain):
 
         if(self.numPartition == -1):
-            self.numPartition = 2**math.floor(math.log2(len(XTrain)/32))
+            self.numPartition = 2**math.floor(math.log2(len(XTrain)/16))
 
             # print("partitions:" + str(self.numPartition))
             
@@ -1051,7 +1051,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\blood_pictures.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
@@ -1079,5 +1079,6 @@ print(model.predict(X))
 print('Score:',model.score(X, y))
 
 # printando o numero de regras e o numero da maior regra, respectivamente
-print('Rules number:', model.getRuleSize())
-print('Biggest rule number:', model.getBiggestRuleSize())
+print('Number of rules:', model.getNumOfClause())
+print('Total number of features:', model.getRuleSize())
+print('Number of features of the biggest rule:', model.getBiggestRuleSize())

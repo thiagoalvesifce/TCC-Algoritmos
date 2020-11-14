@@ -194,7 +194,7 @@ class imli():
     def fit(self, XTrain, yTrain):
 
         if(self.numPartition == -1):
-            self.numPartition = 2**math.floor(math.log2(len(XTrain)/32))
+            self.numPartition = 2**math.floor(math.log2(len(XTrain)/16))
 
             # print("partitions:" + str(self.numPartition))
             
@@ -576,7 +576,7 @@ class imli():
 model = imli(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\blood_pictures.csv"
 
 #aplico a discretizacao do modelo na tabela
 #OBS: Em caso de haver colunas categoricas, diga quais as colunas pelo seus indices (0, 1, ...)
@@ -588,12 +588,6 @@ answer = model.predict(X,y)
 print('======= PREDICT =======')
 print(answer)
 print('=======================')
-
-#guardando as regras geradas pelo treino
-rule = model.getRule()
-print('======= RULES =======')
-print(rule)
-print('=====================')
 
 #TESTANDO ---------------------------------------------------------------------------
 #numero de erros
@@ -609,3 +603,9 @@ print(columnsError)
 print('==================================')
 
 print(model.score(X, y))
+
+#guardando as regras geradas pelo treino
+rule = model.getRule()
+print('======= RULES =======')
+print(rule)
+print('=====================')

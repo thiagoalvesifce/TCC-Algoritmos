@@ -218,7 +218,7 @@ class an_existing_model():
     def fit(self, XTrain, yTrain):
 
         if(self.numPartition == -1):
-            self.numPartition = 2**math.floor(math.log2(len(XTrain)/32))
+            self.numPartition = 2**math.floor(math.log2(len(XTrain)/16))
 
             # print("partitions:" + str(self.numPartition))
             
@@ -767,7 +767,7 @@ class an_existing_model():
 model = an_existing_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\iris_bintarget.csv"
+arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\blood_pictures.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)
