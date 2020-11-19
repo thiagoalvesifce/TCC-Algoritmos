@@ -576,7 +576,7 @@ class imli():
 model = imli(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\blood_pictures.csv"
+arq = r"C:\Users\realc\Desktop\TCC\Tabela_de_testes\parkinsons.csv"
 
 #aplico a discretizacao do modelo na tabela
 #OBS: Em caso de haver colunas categoricas, diga quais as colunas pelo seus indices (0, 1, ...)
