@@ -208,7 +208,7 @@ class an_alternative_model():
                 self.columnInfo.append(temp)
 
             # Ordinal column
-            elif np.issubdtype(data[c].dtype, int) | np.issubdtype(data[c].dtype, float):
+            elif np.issubdtype(data[c].dtype, np.integer) | np.issubdtype(data[c].dtype, np.floating):
                 # Few unique values
                 # if (self.verbose):
                 #     print(data[c].dtype)
@@ -1051,7 +1051,7 @@ class an_alternative_model():
 model = an_alternative_model(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\CarlosJr\Desktop\TCC\Tabela_de_testes\blood_pictures.csv"
+arq = r"C:\Users\realc\Desktop\TCC\Tabela_de_testes\blood_pictures.csv"
 
 #aplico a discretizacao do modelo na tabela
 X,y=model.discretize(arq)

@@ -152,7 +152,7 @@ class imli():
                 column_counter += 2
 
             # Ordinal column
-            elif np.issubdtype(data[c].dtype, int) | np.issubdtype(data[c].dtype, float):
+            elif np.issubdtype(data[c].dtype, np.integer) | np.issubdtype(data[c].dtype, np.floating):
                 # Few unique values
                 # if (self.verbose):
                 #     print(data[c].dtype)
@@ -576,7 +576,7 @@ class imli():
 model = imli(solver="mifumax-win-mfc_static")
 
 #guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\realc\Desktop\TCC\Tabela_de_testes\parkinsons.csv"
+arq = r"C:\Users\realc\Desktop\TCC\Tabela_de_testes\blood_pictures.csv"
 
 #aplico a discretizacao do modelo na tabela
 #OBS: Em caso de haver colunas categoricas, diga quais as colunas pelo seus indices (0, 1, ...)
