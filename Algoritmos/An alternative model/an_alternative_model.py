@@ -9,7 +9,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class an_alternative_model():
-    def __init__(self, numPartition=-1, numClause=2, dataFidelity=10, weightFeature=1, solver="open-wbo", ruleType="DNF",
+    def __init__(self, numPartition=-1, numClause=2, dataFidelity=10, weightFeature=1, solver="open-wbo",
+                 ruleType="DNF",
                  workDir=".", timeOut=1024):
         '''
 
@@ -50,14 +51,14 @@ class an_alternative_model():
 
     def getSelectedColumnIndex(self):
         return_list = [[] for i in range(self.numClause)]
-        
+
         for i in range(self.numClause):
             # guarda todas as colunas e suas respectivas polaridades na regra i
             xHatElem = self.xhat[i]
             xHatFieldElement = self.xhatField[i]
 
             # filtro apenas as colunas que irao aparecer na regra guardando o indice
-            inds_nnz = np.where(abs(xHatElem[0:self.columnInfo[-1][-1]//2]) < 1e-4)[0]
+            inds_nnz = np.where(abs(xHatElem[0:self.columnInfo[-1][-1] // 2]) < 1e-4)[0]
 
             # pra cada coluna, representada pelo seu indice inds, que ira aparecer na regra...
             for inds in inds_nnz:
@@ -67,11 +68,11 @@ class an_alternative_model():
                     # calculando o valor do literal da coluna nunca maior que o numero de colunas
                     variable = (abs(int(xHatFieldElement[inds])) - 1) % self.columnInfo[-1][-1] + 1
 
-                    if (self.columnInfo[t][1:].__contains__( variable )):
+                    if (self.columnInfo[t][1:].__contains__(variable)):
                         # se a coluna for binaria ...
                         if (self.columnInfo[t][0] == 1):
                             # averiguo a polaridade
-                            if(xHatElem[inds + (self.columnInfo[-1][-1]//2)] > 1e-4):
+                            if (xHatElem[inds + (self.columnInfo[-1][-1] // 2)] > 1e-4):
                                 return_list[i].append(variable - 1)
                             else:
                                 return_list[i].append((variable - 1) + 1)
@@ -79,7 +80,7 @@ class an_alternative_model():
                         # se a coluna for categorica ou ordinal ...
                         elif (self.columnInfo[t][0] == 2 or self.columnInfo[t][0] == 4):
                             # averiguo a polaridade
-                            if(xHatElem[inds + (self.columnInfo[-1][-1]//2)] > 1e-4):
+                            if (xHatElem[inds + (self.columnInfo[-1][-1] // 2)] > 1e-4):
                                 return_list[i].append(variable - 1)
                             else:
                                 return_list[i].append((variable - 1) + len(self.columnInfo[t][1:]))
@@ -114,7 +115,7 @@ class an_alternative_model():
         sR = 0
         for j in range(len(ruleIndex)):
             sR += len(ruleIndex[j])
-        
+
         return sR
 
     def getBiggestRuleSize(self):
@@ -123,7 +124,7 @@ class an_alternative_model():
         for j in range(len(ruleIndex)):
             if (len(ruleIndex[j]) >= bR):
                 bR = len(ruleIndex[j])
-        
+
         return bR
 
     def discretize(self, file, categoricalColumnIndex=[], columnSeperator=",", fracPresent=0.9, numThreshold=4):
@@ -245,15 +246,15 @@ class an_alternative_model():
                 continue
             count += 1
         self.columns = X.columns
-        return X.as_matrix(), y.values.ravel()
+        return X.to_numpy(), y.values.ravel()
 
     def fit(self, XTrain, yTrain):
 
-        if(self.numPartition == -1):
-            self.numPartition = 2**math.floor(math.log2(len(XTrain)/16))
+        if self.numPartition == -1:
+            self.numPartition = 2 ** math.floor(math.log2(len(XTrain) / 16))
 
             # print("partitions:" + str(self.numPartition))
-            
+
             if (self.numPartition < 1):
                 self.numPartition = 1
 
@@ -271,35 +272,35 @@ class an_alternative_model():
         y = []
 
         prediction = 0
-        
+
         # para cada linha da matriz
         for e in range(len(XTest)):
-            
+
             # para cada clausula
             for j in range(len(ruleIndex)):
-                
+
                 # para cada coluna da clausula
                 for r in range(len(ruleIndex[j])):
-                    if(self.ruleType == 'DNF'):
-                        if(XTest[e][ ruleIndex[j][r] ] == 0):
+                    if (self.ruleType == 'DNF'):
+                        if (XTest[e][ruleIndex[j][r]] == 0):
                             prediction = 0
                             break
                         else:
                             prediction = 1
-                    elif(self.ruleType == 'CNF'):
-                        if(XTest[e][ ruleIndex[j][r] ] == 1):
+                    elif (self.ruleType == 'CNF'):
+                        if (XTest[e][ruleIndex[j][r]] == 1):
                             prediction = 1
                             break
                         else:
                             prediction = 0
 
-                if(self.ruleType == 'DNF' and prediction == 1):
+                if (self.ruleType == 'DNF' and prediction == 1):
                     break
-                elif(self.ruleType == 'CNF' and prediction == 0):
+                elif (self.ruleType == 'CNF' and prediction == 0):
                     break
 
             y.append(prediction)
-        
+
         return y
 
     def score(self, XTest, y):
@@ -307,10 +308,10 @@ class an_alternative_model():
 
         hits = 0
         for i in range(len(yTest)):
-            if(yTest[i] == y[i]):
+            if (yTest[i] == y[i]):
                 hits += 1
-        
-        return hits/len(yTest)
+
+        return hits / len(yTest)
 
     def learnModel(self, X, y, isTest):
         # temp files to save maxsat query in wcnf format
@@ -330,14 +331,15 @@ class an_alternative_model():
                                   len(X[0]), WCNFFile,
                                   isTest)
         # call a maxsat solver
-        if(self.solver == "open-wbo"):  # solver has timeout and experimented with open-wbo only
-            if(self.numPartition == -1):
+        if (self.solver == "open-wbo"):  # solver has timeout and experimented with open-wbo only
+            if (self.numPartition == -1):
                 cmd = self.solver + '   ' + WCNFFile + ' -cpu-lim=' + str(self.timeOut) + ' > ' + outputFileMaxsat
             else:
-                if(int(math.ceil(self.timeOut/self.numPartition)) < 1): # give at lest 1 second as cpu-lim
+                if (int(math.ceil(self.timeOut / self.numPartition)) < 1):  # give at lest 1 second as cpu-lim
                     cmd = self.solver + '   ' + WCNFFile + ' -cpu-lim=' + str(1) + ' > ' + outputFileMaxsat
                 else:
-                    cmd = self.solver + '   ' + WCNFFile + ' -cpu-lim=' + str(int(math.ceil(self.timeOut/self.numPartition))) + ' > ' + outputFileMaxsat
+                    cmd = self.solver + '   ' + WCNFFile + ' -cpu-lim=' + str(
+                        int(math.ceil(self.timeOut / self.numPartition))) + ' > ' + outputFileMaxsat
                     # print(int(math.ceil(self.timeOut/self.numPartition)))
         else:
             cmd = self.solver + '   ' + WCNFFile + ' > ' + outputFileMaxsat
@@ -376,14 +378,14 @@ class an_alternative_model():
             for r in range(len(self.columnInfo)):
 
                 # Se a coluna for binaria
-                if(self.columnInfo[r][0] == 1):
+                if (self.columnInfo[r][0] == 1):
                     try:
                         fields.remove(str(self.columnInfo[r][2] + (j * self.columnInfo[-1][-1])))
                     except:
                         fields.remove('-' + str(self.columnInfo[r][2] + (j * self.columnInfo[-1][-1])))
 
                 # Se a coluna for categorica ou ordinal
-                elif(self.columnInfo[r][0] == 3 or self.columnInfo[r][0] == 5):
+                elif (self.columnInfo[r][0] == 3 or self.columnInfo[r][0] == 5):
                     # Para cada subcoluna sc
                     for sc in range(1, len(self.columnInfo[r])):
                         try:
@@ -405,35 +407,60 @@ class an_alternative_model():
                 # Averiguando se esse literal representa uma coluna
                 if (abs(int(field)) <= self.numClause * self.columnInfo[-1][-1]):
                     TrueRules.append(str(abs(int(field))))
-            
+
         self.xhat = []
         self.xhatField = []
-        
+
         for i in range(self.numClause):
             self.xhat.append(
                 np.concatenate((
-                    np.array(zeroOneSolution[i * (self.columnInfo[-1][-1]//2):(i + 1) * (self.columnInfo[-1][-1]//2)]),
-                    np.array(zeroOneSolution[(i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2):((i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2)) + (self.columnInfo[-1][-1]//2)])
-                )) 
+                    np.array(
+                        zeroOneSolution[i * (self.columnInfo[-1][-1] // 2):(i + 1) * (self.columnInfo[-1][-1] // 2)]),
+                    np.array(zeroOneSolution[
+                             (i * (self.columnInfo[-1][-1] // 2)) + self.numClause * (self.columnInfo[-1][-1] // 2):((
+                                                                                                                                 i * (
+                                                                                                                                     self.columnInfo[
+                                                                                                                                         -1][
+                                                                                                                                         -1] // 2)) + self.numClause * (
+                                                                                                                                 self.columnInfo[
+                                                                                                                                     -1][
+                                                                                                                                     -1] // 2)) + (
+                                                                                                                                self.columnInfo[
+                                                                                                                                    -1][
+                                                                                                                                    -1] // 2)])
+                ))
             )
-            
+
             self.xhatField.append(
                 np.concatenate((
-                    np.array(fields[i * (self.columnInfo[-1][-1]//2):(i + 1) * (self.columnInfo[-1][-1]//2)]),
-                    np.array(fields[(i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2):((i * (self.columnInfo[-1][-1]//2)) + self.numClause * (self.columnInfo[-1][-1]//2)) + (self.columnInfo[-1][-1]//2)])
-                )) 
+                    np.array(fields[i * (self.columnInfo[-1][-1] // 2):(i + 1) * (self.columnInfo[-1][-1] // 2)]),
+                    np.array(fields[
+                             (i * (self.columnInfo[-1][-1] // 2)) + self.numClause * (self.columnInfo[-1][-1] // 2):((
+                                                                                                                                 i * (
+                                                                                                                                     self.columnInfo[
+                                                                                                                                         -1][
+                                                                                                                                         -1] // 2)) + self.numClause * (
+                                                                                                                                 self.columnInfo[
+                                                                                                                                     -1][
+                                                                                                                                     -1] // 2)) + (
+                                                                                                                                self.columnInfo[
+                                                                                                                                    -1][
+                                                                                                                                    -1] // 2)])
+                ))
             )
-        
+
         # delete temp files
         cmd = "rm " + outputFileMaxsat
         os.system(cmd)
 
         if (not isTest):
-            self.assignList = fields[:(self.numClause * (self.columnInfo[-1][-1]//2))+(self.numClause * (self.columnInfo[-1][-1]//2))]
+            self.assignList = fields[:(self.numClause * (self.columnInfo[-1][-1] // 2)) + (
+                        self.numClause * (self.columnInfo[-1][-1] // 2))]
             self.trainingError += len(TrueErrors)
             self.selectedFeatureIndex = TrueRules
 
-        return fields[(self.numClause * (self.columnInfo[-1][-1]//2))+(self.numClause * (self.columnInfo[-1][-1]//2)):]
+        return fields[
+               (self.numClause * (self.columnInfo[-1][-1] // 2)) + (self.numClause * (self.columnInfo[-1][-1] // 2)):]
 
     def partitionWithEqualProbability(self, X, y):
         '''
@@ -497,7 +524,7 @@ class an_alternative_model():
 
     def generateWCNFFile(self, AMatrix, yVector, xSize, WCNFFile,
                          isTestPhase):
-        ''' VARIÁVEIS IMPORTANTES
+        """ VARIÁVEIS IMPORTANTES
 
         self.numClause = representa o número de regras que se quer obter
 
@@ -507,7 +534,7 @@ class an_alternative_model():
 
         cnfClauses = representa o arquivo WCNF gerado ao final da modelagem
 
-        '''
+        """
         topWeight = 1
         additionalVariable = 0
         numClauses = 0
@@ -519,7 +546,7 @@ class an_alternative_model():
 
         # Se o assignList estiver vazio, entao quer dizer que estamos na primeira particao de dados,
         # logo devemos CRIAR os literais que representam as colunas
-        if(self.assignList == []):  
+        if (self.assignList == []):
 
             # Para cada regra j das N regras
             for j in range(self.numClause):
@@ -528,7 +555,7 @@ class an_alternative_model():
                 for r in range(len(self.columnInfo)):
 
                     # Se a coluna for binaria
-                    if(self.columnInfo[r][0] == 1):
+                    if (self.columnInfo[r][0] == 1):
                         new_clause = str(topWeight) + ' '
 
                         # Criando as variaveis ¬sjr
@@ -539,7 +566,7 @@ class an_alternative_model():
                         cnfClauses += new_clause
 
                     # Se a coluna for categorica ou ordinal
-                    elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
+                    elif (self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
                         # Para cada subcoluna sc
                         for sc in range(1, len(self.columnInfo[r])):
                             new_clause = str(topWeight) + ' '
@@ -556,20 +583,20 @@ class an_alternative_model():
                         continue
 
             # Somando o peso das soft's criadas até aqui
-            topWeight = (self.numClause * (self.columnInfo[-1][-1]//2))
+            topWeight = (self.numClause * (self.columnInfo[-1][-1] // 2))
 
         # Se entrar aqui, o assignList guarda literais da ultima particao
         else:
             # Percorrendo os literais que representam as colunas e suas polaridades
-            for l in self.assignList[:(self.numClause * (self.columnInfo[-1][-1]//2) * 2)]:
+            for l in self.assignList[:(self.numClause * (self.columnInfo[-1][-1] // 2) * 2)]:
                 new_clause = str(topWeight) + ' '
                 new_clause += l + ' '
                 new_clause += "0\n"
                 numClauses += 1
                 cnfClauses += new_clause
-            
+
             # Somando o peso das soft's criadas até aqui
-            topWeight = (self.numClause * (self.columnInfo[-1][-1]//2) * 2)
+            topWeight = (self.numClause * (self.columnInfo[-1][-1] // 2) * 2)
 
         # 3.1) Força que todas as regras de todas as linhas cujo y seja = 0, sejam anuladas.
 
@@ -577,9 +604,9 @@ class an_alternative_model():
         for e in range(len(yVector)):
 
             # Averiguando se a linha e tem previsao 0
-            if(yVector[e] == 0):
+            if (yVector[e] == 0):
                 # Voltando para a primeira variavel dº¹j,r
-                djr = (self.numClause * self.columnInfo[-1][-1]) + (self.numClause * (self.columnInfo[-1][-1]//2)) + 1
+                djr = (self.numClause * self.columnInfo[-1][-1]) + (self.numClause * (self.columnInfo[-1][-1] // 2)) + 1
 
                 # Para cada regra j das N regras
                 for j in range(self.numClause):
@@ -590,27 +617,27 @@ class an_alternative_model():
                     for r in range(len(self.columnInfo)):
 
                         # Se a coluna for binaria
-                        if(self.columnInfo[r][0] == 1):
+                        if (self.columnInfo[r][0] == 1):
                             # Averiguando se o valor na matriz na linha e nessa coluna é 0 ou 1
                             # Caso seja 0, entao coloco dºjr. Caso seja 1, entao coloco d¹jr
-                            if(AMatrix[e][self.columnInfo[r][1] - 1] == 0):
+                            if (AMatrix[e][self.columnInfo[r][1] - 1] == 0):
                                 new_clause += str(djr) + ' '
                             else:
-                                new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
+                                new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1] // 2))) + ' '
 
                             # Passo para o proximo dº¹j,r
                             djr += 1
 
                         # Se a coluna for categorica ou ordinal
-                        elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
+                        elif (self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
                             # Para cada subcoluna sc
                             for sc in range(1, len(self.columnInfo[r])):
                                 # Averiguando se o valor na matriz na linha e nessa coluna é 0 ou 1
                                 # Caso seja 0, entao coloco dºjr. Caso seja 1, entao coloco d¹jr
-                                if(AMatrix[e][self.columnInfo[r][sc] - 1] == 0):
+                                if (AMatrix[e][self.columnInfo[r][sc] - 1] == 0):
                                     new_clause += str(djr) + ' '
                                 else:
-                                    new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
+                                    new_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1] // 2))) + ' '
 
                                 # Passo para o proximo dº¹j,r
                                 djr += 1
@@ -626,7 +653,8 @@ class an_alternative_model():
         # 5.1) Garante que a linha com y = 1 tem que ser verdadeira em alguma regra.
 
         # Definindo onde as variaveis cj,e vao iniciar (ainda sera incrementado + 1)
-        cje = (self.numClause * self.columnInfo[-1][-1]) + (self.numClause * self.columnInfo[-1][-1]//2) + (2 * self.numClause * (self.columnInfo[-1][-1]//2))
+        cje = (self.numClause * self.columnInfo[-1][-1]) + (self.numClause * self.columnInfo[-1][-1] // 2) + (
+                    2 * self.numClause * (self.columnInfo[-1][-1] // 2))
         cje0 = cje + 1
         cjef = cje + (self.numClause * yVector.count(1))
 
@@ -645,9 +673,9 @@ class an_alternative_model():
             cnfClauses += new_clause
 
         # MONTANDO CLAUSULAS HARD, ---------------------------------------------------------------------------------------------------
-        
+
         # Fazendo com que o topWeight seja maior que a soma das softClauses para pesificar as hard's
-        topWeight += 1 
+        topWeight += 1
 
         # 1) Garante que pelo menos uma feature esteja em uma regra
 
@@ -659,13 +687,13 @@ class an_alternative_model():
             for r in range(len(self.columnInfo)):
 
                 # Se a coluna for binaria
-                if(self.columnInfo[r][0] == 1):
+                if (self.columnInfo[r][0] == 1):
                     # Criando as variaveis ¬sjr
                     new_clause += '-' + str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1])) + ' '
                     additionalVariable += 1
 
                 # Se a coluna for categorica ou ordinal
-                elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
+                elif (self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
                     # Para cada subcoluna sc
                     for sc in range(1, len(self.columnInfo[r])):
                         # Criando as variaveis ¬sjr
@@ -675,39 +703,39 @@ class an_alternative_model():
                 # Se não for binaria, categoria ou ordinal e coluna barrada
                 else:
                     continue
-            
+
             new_clause += "0\n"
             numClauses += 1
             cnfClauses += new_clause
 
         # 2) Define a variável dº que rejeita as linhas com a feature sendo 0 e o d¹ com as features sendo 1
-        
+
         # Definindo onde as variaveis lj,r vao iniciar (ainda sera incrementado + 1)
         ljr = (self.numClause * self.columnInfo[-1][-1])
         # Definindo onde as variaveis dj,r vao iniciar (ainda sera incrementado + 1)
-        djr = ljr + (self.numClause * (self.columnInfo[-1][-1]//2))
+        djr = ljr + (self.numClause * (self.columnInfo[-1][-1] // 2))
 
         # Laco que representa as variaveis dº e d¹
         for d in range(2):
 
             # Para cada regra j das N regras
             for j in range(self.numClause):
-                
+
                 # Para cada feature r das K features
                 for r in range(len(self.columnInfo)):
 
                     # Se a coluna for binaria
-                    if(self.columnInfo[r][0] == 1):
+                    if (self.columnInfo[r][0] == 1):
                         # Criando variavel dº¹j,r e lj,r
                         djr += 1
                         ljr += 1
                         # So conto as variaveis lj,r a partir do d¹j,r (quantidade de lj,r e metade de dj,r)
                         additionalVariable += 1 + (d * 1)
-                        
+
                         # (¬dº¹j,r V ¬sjr)
                         new_clause = str(topWeight) + ' '
                         new_clause += '-' + str(djr) + ' -' + str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1]))
-                        
+
                         new_clause += " 0\n"
                         numClauses += 1
                         cnfClauses += new_clause
@@ -715,7 +743,7 @@ class an_alternative_model():
                         # (¬dºj,r V lj,r) se dº OU (¬d¹j,r V ¬lj,r) se d¹
                         new_clause = str(topWeight) + ' '
                         new_clause += '-' + str(djr) + ' '
-                        if(d == 0):
+                        if (d == 0):
                             new_clause += str(ljr)
                         else:
                             new_clause += '-' + str(ljr)
@@ -727,7 +755,7 @@ class an_alternative_model():
                         # (sj,r V ¬lj,r V dºj,r) se dº OU (sj,r V lj,r V d¹j,r) se d¹
                         new_clause = str(topWeight) + ' '
                         new_clause += str(self.columnInfo[r][1] + (j * self.columnInfo[-1][-1])) + ' '
-                        if(d == 0):
+                        if (d == 0):
                             new_clause += '-' + str(ljr) + ' '
                         else:
                             new_clause += str(ljr) + ' '
@@ -738,7 +766,7 @@ class an_alternative_model():
                         cnfClauses += new_clause
 
                     # Se a coluna for categorica ou ordinal
-                    elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
+                    elif (self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
                         # Para cada subcoluna sc
                         for sc in range(1, len(self.columnInfo[r])):
                             # Criando variavel dº¹j,r e lj,r
@@ -746,11 +774,12 @@ class an_alternative_model():
                             ljr += 1
                             # So conto as variaveis lj,r a partir do d¹j,r (quantidade de lj,r e metade de dj,r)
                             additionalVariable += 1 + (d * 1)
-                            
+
                             # (¬dº¹j,r V ¬sjr)
                             new_clause = str(topWeight) + ' '
-                            new_clause += '-' + str(djr) + ' -' + str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1]))
-                            
+                            new_clause += '-' + str(djr) + ' -' + str(
+                                self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1]))
+
                             new_clause += " 0\n"
                             numClauses += 1
                             cnfClauses += new_clause
@@ -758,7 +787,7 @@ class an_alternative_model():
                             # (¬dºj,r V lj,r) se dº OU (¬d¹j,r V ¬lj,r) se d¹
                             new_clause = str(topWeight) + ' '
                             new_clause += '-' + str(djr) + ' '
-                            if(d == 0):
+                            if (d == 0):
                                 new_clause += str(ljr)
                             else:
                                 new_clause += '-' + str(ljr)
@@ -770,7 +799,7 @@ class an_alternative_model():
                             # (sj,r V ¬lj,r V dºj,r) se dº OU (sj,r V lj,r V d¹j,r) se d¹
                             new_clause = str(topWeight) + ' '
                             new_clause += str(self.columnInfo[r][sc] + (j * self.columnInfo[-1][-1])) + ' '
-                            if(d == 0):
+                            if (d == 0):
                                 new_clause += '-' + str(ljr) + ' '
                             else:
                                 new_clause += str(ljr) + ' '
@@ -786,16 +815,16 @@ class an_alternative_model():
 
             # Resetando lj,r
             ljr = (self.numClause * self.columnInfo[-1][-1])
-        
+
         # 4) Define o crj,eq que indica se a linha eq é verdadeira na regra j.
 
         # Percorrendo todas as linhas e da matriz
         for e in range(len(yVector)):
 
             # Averiguando se a linha e tem previsao 1
-            if(yVector[e] == 1):
+            if (yVector[e] == 1):
                 # Voltando para a primeira variavel dº¹j,r
-                djr = (self.numClause * self.columnInfo[-1][-1]) + (self.numClause * (self.columnInfo[-1][-1]//2)) + 1
+                djr = (self.numClause * self.columnInfo[-1][-1]) + (self.numClause * (self.columnInfo[-1][-1] // 2)) + 1
 
                 # Para cada regra j das N regras
                 for j in range(self.numClause):
@@ -804,25 +833,25 @@ class an_alternative_model():
                     additionalVariable += 1
                     # Criando uma clausula auxiliar que guardara os literais djr de cada coluna
                     aux_clause = ''
-                    
+
                     # Para cada feature r das K features
                     for r in range(len(self.columnInfo)):
 
                         # Se a coluna for binaria
-                        if(self.columnInfo[r][0] == 1):
+                        if (self.columnInfo[r][0] == 1):
                             new_clause = str(topWeight) + ' '
 
                             new_clause += '-' + str(cje) + ' '
                             # Averiguando se o valor na matriz na linha e nessa coluna é 0 ou 1
                             # Caso seja 0, entao coloco dºjr. Caso seja 1, entao coloco d¹jr
-                            if(AMatrix[e][self.columnInfo[r][1] - 1] == 0):
+                            if (AMatrix[e][self.columnInfo[r][1] - 1] == 0):
                                 new_clause += '-' + str(djr) + ' '
                                 # Guardo o djr no aux_clause
                                 aux_clause += str(djr) + ' '
                             else:
-                                new_clause += '-' + str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
+                                new_clause += '-' + str(djr + (self.numClause * (self.columnInfo[-1][-1] // 2))) + ' '
                                 # Guardo o djr no aux_clause
-                                aux_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
+                                aux_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1] // 2))) + ' '
 
                             new_clause += "0\n"
                             numClauses += 1
@@ -832,7 +861,7 @@ class an_alternative_model():
                             djr += 1
 
                         # Se a coluna for categorica ou ordinal
-                        elif(self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
+                        elif (self.columnInfo[r][0] == 2 or self.columnInfo[r][0] == 4):
                             # Para cada subcoluna sc
                             for sc in range(1, len(self.columnInfo[r])):
                                 new_clause = str(topWeight) + ' '
@@ -840,33 +869,34 @@ class an_alternative_model():
                                 new_clause += '-' + str(cje) + ' '
                                 # Averiguando se o valor na matriz na linha e nessa coluna é 0 ou 1
                                 # Caso seja 0, entao coloco dºjr. Caso seja 1, entao coloco d¹jr
-                                if(AMatrix[e][self.columnInfo[r][sc] - 1] == 0):
+                                if (AMatrix[e][self.columnInfo[r][sc] - 1] == 0):
                                     new_clause += '-' + str(djr) + ' '
                                     # Guardo o djr no aux_clause
                                     aux_clause += str(djr) + ' '
                                 else:
-                                    new_clause += '-' + str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
+                                    new_clause += '-' + str(
+                                        djr + (self.numClause * (self.columnInfo[-1][-1] // 2))) + ' '
                                     # Guardo o djr no aux_clause
-                                    aux_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1]//2))) + ' '
+                                    aux_clause += str(djr + (self.numClause * (self.columnInfo[-1][-1] // 2))) + ' '
 
                                 new_clause += "0\n"
                                 numClauses += 1
                                 cnfClauses += new_clause
 
                                 # Passo para o proximo dº¹j,r
-                                djr += 1                   
+                                djr += 1
 
-                        # Se não for binaria, categoria ou ordinal e coluna barrada
+                                # Se não for binaria, categoria ou ordinal e coluna barrada
                         else:
-                            continue   
+                            continue
 
                     new_clause = str(topWeight) + ' '
                     new_clause += aux_clause + str(cje) + ' '
                     new_clause += "0\n"
                     numClauses += 1
-                    cnfClauses += new_clause                 
-        
-        # write in wcnf format
+                    cnfClauses += new_clause
+
+                    # write in wcnf format
         header = 'p wcnf ' + str(additionalVariable) + ' ' + str(numClauses) + ' ' + str(topWeight) + '\n'
         f = open(WCNFFile, 'w')
         f.write(header)
@@ -893,46 +923,49 @@ class an_alternative_model():
         # percorre todas as colunas que estarao na(s) regra(s)
         for i in range(self.numClause * xSize):
             # se o valor do literal nessa coluna for negativo (vai estar na regra) ...
-            if ((int(fields[i])) < 0):
-                # variavel que representa o valor do literal (nunca maior que o valor do literal que representa a ultima coluna)
+            if int(fields[i]) < 0:
+                # variavel que representa o valor do literal (nunca maior que o valor do literal que representa a
+                # ultima coluna)
                 variable = (abs(int(fields[i])) - 1) % xSize + 1
 
-                # variavel que guarda o indice da regra que o literal esta (nunca maior que o numero de regras -1 (indice))
+                # variavel que guarda o indice da regra que o literal esta (nunca maior que o numero de regras -1 (
+                # indice))
                 clause_position = int((abs(int(fields[i])) - 1) / xSize)
 
                 # percorre todas as colunas adicionadas no end_of_column_list
                 for j in range(len(end_of_column_list)):
 
-                    # Averiguando se o valor do literal e menor ou igual ao valor da coluna guardada no indice j do end_of_column_list
+                    # Averiguando se o valor do literal e menor ou igual ao valor da coluna guardada no indice j do
+                    # end_of_column_list
                     if (variable <= end_of_column_list[j]):
 
                         # Averiguando se a coluna e normal (binaria), pois se for eu pulo o lj,r dela
-                        if(self.columnInfo[j][0] == 1):
-                            if(variable == self.columnInfo[j][1]):
+                        if self.columnInfo[j][0] == 1:
+                            if variable == self.columnInfo[j][1]:
                                 # Proxima coluna, entao proximo l
                                 l_position += 1
                             break
 
                         # Averiguando se a coluna e normal (categorica), pois se for eu pulo o lj,r dela
-                        elif(self.columnInfo[j][0] == 2):
+                        elif (self.columnInfo[j][0] == 2):
                             # Proxima coluna, entao proximo l
                             l_position += 1
                             break
-                        
+
                         # Averiguo se ela e ordinal normal
-                        elif(self.columnInfo[j][0] == 4):
+                        elif (self.columnInfo[j][0] == 4):
                             variable_contained_list[clause_position][j].append(clause_position * xSize + variable)
                             freq_end_of_column_list[clause_position][j][0] += 1
-                            
+
                             # Averiguo se a polaridade dela e normal ou barrada
-                            if(int(fields[l_position]) > 0):
+                            if (int(fields[l_position]) > 0):
                                 freq_end_of_column_list[clause_position][j][1] = self.columnInfo[j][0]
                             else:
                                 freq_end_of_column_list[clause_position][j][1] = 5
-                            
+
                             # Proxima coluna, entao proximo l
                             l_position += 1
-                            
+
                             break
 
                         # Caso caia aqui, essa coluna nao precisa ser registrada, passo para a proxima
@@ -951,14 +984,14 @@ class an_alternative_model():
                     if (variable <= end_of_column_list[j]):
 
                         # Averiguando se a coluna e normal (binaria), pois se for eu pulo o lj,r dela
-                        if(self.columnInfo[j][0] == 1):
-                            if(variable == self.columnInfo[j][1]):
+                        if (self.columnInfo[j][0] == 1):
+                            if (variable == self.columnInfo[j][1]):
                                 # Proxima coluna, entao proximo l
                                 l_position += 1
                             break
 
                         # Averiguando se a coluna e normal (binaria, categorica), pois se for eu pulo o lj,r dela
-                        elif(self.columnInfo[j][0] == 2 or self.columnInfo[j][0] == 4):
+                        elif (self.columnInfo[j][0] == 2 or self.columnInfo[j][0] == 4):
                             # Proxima coluna, entao proximo lj'r
                             l_position += 1
                             break
@@ -999,7 +1032,7 @@ class an_alternative_model():
             xHatFieldElement = self.xhatField[i]
 
             # filtro apenas as colunas que irao aparecer na regra guardando o indice
-            inds_nnz = np.where(abs(xHatElem[0:self.columnInfo[-1][-1]//2]) < 1e-4)[0]
+            inds_nnz = np.where(abs(xHatElem[0:self.columnInfo[-1][-1] // 2]) < 1e-4)[0]
 
             str_clauses = []
             # pra cada coluna, representada pelo seu indice inds, que ira aparecer na regra...
@@ -1010,11 +1043,11 @@ class an_alternative_model():
                     # calculando o valor do literal da coluna nunca maior que o numero de colunas
                     variable = (abs(int(xHatFieldElement[inds])) - 1) % self.columnInfo[-1][-1] + 1
 
-                    if (self.columnInfo[t][1:].__contains__( variable )):
+                    if (self.columnInfo[t][1:].__contains__(variable)):
                         # se a coluna for binaria ...
                         if (self.columnInfo[t][0] == 1):
                             # averiguo a polaridade
-                            if(xHatElem[inds + (self.columnInfo[-1][-1]//2)] > 1e-4):
+                            if (xHatElem[inds + (self.columnInfo[-1][-1] // 2)] > 1e-4):
                                 str_clauses.append(' '.join(self.columns[variable - 1]))
                             else:
                                 str_clauses.append(' '.join(self.columns[(variable - 1) + 1]))
@@ -1022,7 +1055,7 @@ class an_alternative_model():
                         # se a coluna for categorica ou ordinal ...
                         elif (self.columnInfo[t][0] == 2 or self.columnInfo[t][0] == 4):
                             # averiguo a polaridade
-                            if(xHatElem[inds + (self.columnInfo[-1][-1]//2)] > 1e-4):
+                            if (xHatElem[inds + (self.columnInfo[-1][-1] // 2)] > 1e-4):
                                 str_clauses.append(' '.join(self.columns[variable - 1]))
                             else:
                                 str_clauses.append(' '.join(self.columns[(variable - 1) + len(self.columnInfo[t][1:])]))
@@ -1045,21 +1078,23 @@ class an_alternative_model():
 
         return generatedRule
 
-#------------- TESTES --------------------------------------------------------------------
 
-#instancio o modelo indicando o nome do exec. do solver que deve está na mesma pasta
-model = an_alternative_model(solver="mifumax-win-mfc_static")
+# ------------- TESTES --------------------------------------------------------------------
 
-#guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
-arq = r"C:\Users\realc\Desktop\TCC\Tabela_de_testes\blood_pictures.csv"
+# instancio o modelo indicando o nome do exec. do solver que deve está na mesma pasta
+model = an_alternative_model(solver="/home/thiago/PycharmProjects/TCC-Algoritmos/UWrMaxSat-1.1w/bin/uwrmaxsat")
 
-#aplico a discretizacao do modelo na tabela
-X,y=model.discretize(arq)
+# guardo o endereco da tabela que será usada para a aplicacao do modelo (... -> end. da pasta do projeto)
+# arq = r"/home/thiago/PycharmProjects/TCC-Algoritmos/Tabela_de_testes/parkinsons.data.csv"
+arq = r"/home/thiago/PycharmProjects/TCC-Algoritmos/Tabela_de_testes/column_2C.csv"
 
-#treinando o modelo usando a discretizacao da tabela
-model.fit(X,y)
+# aplico a discretizacao do modelo na tabela
+X, y = model.discretize(arq)
 
-#guardando as regras geradas pelo treino
+# treinando o modelo usando a discretizacao da tabela
+model.fit(X, y)
+
+# guardando as regras geradas pelo treino
 rule = model.getRule()
 print('============== RULE ==============')
 print(rule)
@@ -1076,7 +1111,7 @@ print('==================================')
 print(model.predict(X))
 '''
 
-print('Score:',model.score(X, y))
+print('Score:', model.score(X, y))
 
 # printando o numero de regras e o numero da maior regra, respectivamente
 print('Number of rules:', model.getNumOfClause())
